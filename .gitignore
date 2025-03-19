@@ -1,0 +1,14 @@
+.idea/
+
+__pycache__/
+*.pyc
+*.pyo
+
+.venv/
+env/
+
+resnet.egg-info
+
+experiments/
+
+*.log
