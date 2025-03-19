@@ -1,0 +1,9 @@
+pyproject.toml
+resnet/dataloader.py
+resnet/model.py
+resnet/train.py
+resnet.egg-info/PKG-INFO
+resnet.egg-info/SOURCES.txt
+resnet.egg-info/dependency_links.txt
+resnet.egg-info/requires.txt
+resnet.egg-info/top_level.txt

@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["resnet"]
+
+[project]
+name = "resnet"
+version = "0.0.1"
+authors = [
+  {name="Philipp Huber"},
+]
+description = "ResNet"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Development Status :: 3 - Alpha",
+]
+dependencies = [
+    "numpy>=1.20.0",
+    "h5py>=3.5.9",
+    "scipy",
+    "torch",
+    "torchvision",
+    "mpi4py>=3.1",
+    "perun[mpi,nvidia,rocm]",
+    "matplotlib"
+]
+
+[tool.ruff]
+# Same as Black.
+line-length = 132
+indent-width = 4
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    "*.egg-info",
+    ".git",
+    ".git-rewrite",
+    ".ruff_cache",
+    ".venv",
+    "__pypackages__",
+    "site-packages",
+    "*.log",
+    "experiments",
+]

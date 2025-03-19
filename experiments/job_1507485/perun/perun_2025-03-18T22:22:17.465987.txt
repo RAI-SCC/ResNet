@@ -1,0 +1,22 @@
+PERUN REPORT
+
+App name: perun
+First run: 2025-03-18T22:22:17.465987
+Last run: 2025-03-18T22:22:17.465987
+
+
+RUN ID: 2025-03-18T22:22:17.465987
+
+|   Round # | Host                  | RUNTIME     | ENERGY    | CPU_POWER   | CPU_UTIL   | GPU_POWER   | GPU_MEM   | DRAM_POWER   | MEM_UTIL   |
+|----------:|:----------------------|:------------|:----------|:------------|:-----------|:------------|:----------|:-------------|:-----------|
+|         0 | haicn1710.localdomain | 27136.438 s | 15.010 MJ | 237.004 W   | 3.691 %    | 289.331 W   | 11.191 GB | 26.776 W     | 0.055 %    |
+|         0 | All                   | 27136.438 s | 15.010 MJ | 237.004 W   | 3.691 %    | 289.331 W   | 11.191 GB | 26.776 W     | 0.055 %    |
+
+Monitored Functions
+
+|   Round # | Function    |   Avg Calls / Rank | Avg Runtime       | Avg Power       | Avg CPU Util   | Avg GPU Mem Util   |
+|----------:|:------------|-------------------:|:------------------|:----------------|:---------------|:-------------------|
+|         0 | dataloader  |                  1 | 4.358±0.002 s     | 416.559±0.070 W | 1.826±0.000 %  | 2.336±0.000 %      |
+|         0 | train_model |                  1 | 27121.824±0.006 s | 553.139±0.000 W | 3.693±0.000 %  | 6.997±0.000 %      |
+
+The application has run been run 1 times. Throught its runtime, it has used 6.588 kWh, released a total of 2.752 kgCO2e into the atmosphere, and you paid 2.14 € in electricity for it.
