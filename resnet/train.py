@@ -128,10 +128,6 @@ def train_model(
             # Logging.
             torch.distributed.all_reduce(loss)
             loss /= world_size
-            if rank == 0:
-                print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
-                      f'| Batch {batch_idx:04d}/{len(train_loader):04d} '
-                      f'| Averaged Loss: {loss:.4f}')
 
         model.eval()  # Set model to evaluation mode.
 
@@ -156,9 +152,13 @@ def train_model(
 
             if rank == 0:
                 print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
+                      f'| Loss: {loss:.4f} '
                       f'| Train: {train_acc :.2f}% '
                       f'| Validation: {valid_acc :.2f}% '
                       f'| Time: {time_elapsed :.2f} min')
+
+                torch.save({'epoch': epoch, 'model_state': model.state_dict(),
+                            'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
 
     if rank == 0:
         torch.save(loss_history, f'loss.pt')
