@@ -14,7 +14,7 @@ from resnet.dataloader import dataloader
 @monitor()
 def main():
     #  Adjust hyperparameters:
-    #  Optimizer, learning rate / lr scheduler, num_worker, batch size, epochs, ResNet size
+    #  num_worker, batch size, epochs, ResNet size
 
     start_time = time.perf_counter()
 
@@ -49,19 +49,19 @@ def main():
     train_loader, valid_loader = dataloader(batch_size=b, num_workers=2)
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
-    model = DDP(  # Wrap model with DDP.
-        model, device_ids=[slurm_localid], output_device=slurm_localid
-    )
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.1)
+    model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.1, weight_decay=0.0001)
+    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
     # Train model.
-    loss_history, train_acc_history, valid_acc_history, time_history = train_model(
+    valid_loss_history, train_acc_history, valid_acc_history, time_history = train_model(
         model=model,
         num_epochs=e,
         train_loader=train_loader,
         valid_loader=valid_loader,
         optimizer=optimizer,
-        start_time=start_time
+        start_time=start_time,
+        lr_scheduler=lr_scheduler
     )
 
     dist.destroy_process_group()

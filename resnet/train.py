@@ -48,10 +48,12 @@ def get_right(model, data_loader):
 
     Returns
     _______
-    int : correct_pred
+    correct_pred : int
         The number of correctly predicted samples.
-    int : num_examples
+    num_examples : int
         The overall number of samples in the dataset.
+    loss : float
+        Loss
     """
     with torch.no_grad():
         correct_pred, num_examples = 0, 0
@@ -60,11 +62,12 @@ def get_right(model, data_loader):
             features = features.cuda()
             targets = targets.float().cuda()
             output = model(features)
+            loss = torch.nn.functional.cross_entropy(output, targets.long())
             _, predicted_labels = torch.max(output, 1)  # Get class with highest score.
             num_examples += targets.size(0)
             correct_pred += (predicted_labels == targets).sum()
     num_examples = torch.Tensor([num_examples]).cuda()
-    return correct_pred, num_examples
+    return correct_pred, num_examples, loss
 
 
 @monitor()
@@ -75,6 +78,7 @@ def train_model(
     valid_loader,
     optimizer,
     start_time,
+    lr_scheduler
 ):
     """
     Train model in DDP fashion.
@@ -93,6 +97,8 @@ def train_model(
         optimizer to use
     start_time : float
         Start time of main
+    lr_scheduler :
+        LR scheduler
 
     Returns
     _______
@@ -108,7 +114,8 @@ def train_model(
 
     rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()
-    loss_history, train_acc_history, valid_acc_history, time_history = [], [], [], []  # Initialize history lists.
+    (valid_loss_history, train_loss_history) = [], []
+    (train_acc_history, valid_acc_history, time_history) = [], [], []
 
     for epoch in range(num_epochs):  # Loop over epochs.
         train_loader.sampler.set_epoch(epoch)
@@ -122,37 +129,38 @@ def train_model(
             output = model(features)
             loss = torch.nn.functional.cross_entropy(output, targets)
             optimizer.zero_grad()
-            # lr scheduler?
             loss.backward()
             optimizer.step()
-            # Logging.
-            torch.distributed.all_reduce(loss)
-            loss /= world_size
 
         model.eval()  # Set model to evaluation mode.
 
         with torch.no_grad():  # Disable gradient calculation.
             # Get rank-local numbers of correctly classified and overall samples in training and validation set.
-            right_train, num_train = get_right(model, train_loader)
-            right_valid, num_valid = get_right(model, valid_loader)
+            right_train, num_train, train_loss = get_right(model, train_loader)
+            right_valid, num_valid, valid_loss = get_right(model, valid_loader)
             # Allreduce rank-local numbers of correctly classified and overall training and validation samples.
             torch.distributed.all_reduce(right_train)
             torch.distributed.all_reduce(right_valid)
             torch.distributed.all_reduce(num_train)
             torch.distributed.all_reduce(num_valid)
-            torch.distributed.all_reduce(loss)
-            loss /= world_size
+            torch.distributed.all_reduce(valid_loss)
+            valid_loss /= world_size
+            torch.distributed.all_reduce(train_loss)
+            train_loss /= world_size
+            lr_scheduler.step(valid_loss)
+
             time_elapsed = (time.perf_counter() - start_time) / 60
             train_acc = right_train.item() / num_train.item() * 100
             valid_acc = right_valid.item() / num_valid.item() * 100
-            loss_history.append(loss.item())
+            valid_loss_history.append(valid_loss.item())
+            train_loss_history.append(train_loss.item())
             train_acc_history.append(train_acc)
             valid_acc_history.append(valid_acc)
             time_history.append(time_elapsed)
 
             if rank == 0:
                 print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
-                      f'| Loss: {loss:.4f} '
+                      f'| Loss: {valid_loss:.4f} '
                       f'| Train: {train_acc :.2f}% '
                       f'| Validation: {valid_acc :.2f}% '
                       f'| Time: {time_elapsed :.2f} min')
@@ -161,9 +169,10 @@ def train_model(
                             'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
 
     if rank == 0:
-        torch.save(loss_history, f'loss.pt')
+        torch.save(train_loss_history, f'train_loss.pt')
+        torch.save(valid_loss_history, f'valid_loss.pt')
         torch.save(train_acc_history, f'train_acc.pt')
         torch.save(valid_acc_history, f'valid_acc.pt')
         torch.save(time_history, f'time.pt')
 
-    return loss_history, train_acc_history, valid_acc_history, time_history
+    return valid_loss_history, train_acc_history, valid_acc_history, time_history
