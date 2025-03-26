@@ -6,6 +6,8 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from perun import monitor
 
+import argparse
+
 from resnet.model import ResNet
 from resnet.train import train_model
 from resnet.dataloader import dataloader
@@ -15,7 +17,12 @@ from resnet.dataloader import dataloader
 def main():
     #  Adjust hyperparameters:
     #  num_worker, batch size, epochs, ResNet size
-
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--use_subset",default=False,type=bool)
+    parser.add_argument("--data_path",default="./",type=str)
+    args = parser.parse_args()
+    
     start_time = time.perf_counter()
 
     # Distributed set up.
@@ -46,7 +53,7 @@ def main():
     e = 20  # Set number of epochs to be trained.
 
     # Get distributed dataloaders on all ranks.
-    train_loader, valid_loader = dataloader(batch_size=b, num_workers=2)
+    train_loader, valid_loader = dataloader(batch_size=b, num_workers=2, use_subset=args.use_subset, path_to_data=args.data_path)
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
     model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.

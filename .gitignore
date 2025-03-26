@@ -12,3 +12,5 @@ resnet.egg-info
 experiments/
 
 *.log
+
+./scripts/results.ipynb
