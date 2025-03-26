@@ -5,7 +5,7 @@ import numpy as np
 
 
 @monitor()
-def dataloader(batch_size: int = 32, num_workers: int = 8):
+def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = False, path_to_data: str = "./"):
     """
     Get distributed ImageNet dataloaders for training and validation in a DDP setting.
 
@@ -18,7 +18,6 @@ def dataloader(batch_size: int = 32, num_workers: int = 8):
     """
 
     # Define Paths
-    path_to_data = "/hkfs/home/dataset/datasets/imagenet-2012/original/imagenet-raw/ILSVRC/Data/CLS-LOC/"
     path_to_train = path_to_data + "/train"
     path_to_valid = path_to_data + "/val"
 
@@ -42,7 +41,6 @@ def dataloader(batch_size: int = 32, num_workers: int = 8):
     valid_dataset = tv.datasets.ImageFolder(root=path_to_valid, transform=train_transform)
 
     # subset for fast debugging - to be deleted
-    use_subset = False
     if use_subset:
         subset_ratio = 0.01
         # Get subset indices
