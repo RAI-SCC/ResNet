@@ -111,6 +111,9 @@ def train_model(
     time_history : list
         History of elapsed time corresponding to lists above.
     """
+    
+    print(20*"-")
+    print("Start Training")
 
     rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()

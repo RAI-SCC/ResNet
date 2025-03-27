@@ -46,7 +46,7 @@ def main():
     print(f"CUDA Available: {torch.cuda.is_available()}")
     print(f"Number of GPUs: {torch.cuda.device_count()}")
     print(f"Global Batch Size: {args.batchsize}")
-    print(f"Local Batch Size: {args.batchsize / world_size}")
+    print(f"Local Batch Size: {int(args.batchsize / world_size)}")
     print(40*"-")
     if dist.is_initialized():
         print(f"Current GPU: {torch.cuda.current_device()}")
