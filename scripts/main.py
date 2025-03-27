@@ -21,6 +21,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--use_subset",default=False,type=bool)
     parser.add_argument("--data_path",default="./",type=str)
+    parser.add_argument("--batchsize",default=1,type=int)
+    parser.add_argument("--num_epochs",default=2,type=int)
     args = parser.parse_args()
     
     start_time = time.perf_counter()
@@ -40,20 +42,21 @@ def main():
     dist.init_process_group(
         backend="nccl", rank=rank, world_size=world_size, init_method="env://"
     )
+
+    print(f"CUDA Available: {torch.cuda.is_available()}")
+    print(f"Number of GPUs: {torch.cuda.device_count()}")
+    print(f"Global Batch Size: {args.batchsize}")
+    print(f"Local Batch Size: {int(args.batchsize / world_size)}")
+    print(40*"-")
     if dist.is_initialized():
-        print(f"CUDA Available: {torch.cuda.is_available()}")
-        print(f"Number of GPUs: {torch.cuda.device_count()}")
         print(f"Current GPU: {torch.cuda.current_device()}")
         print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
         print(f"Slurm rank / world size: {rank} / {world_size}")
         print(f"Torch rank / world size: {torch.distributed.get_rank()} / {torch.distributed.get_world_size()}")
         print(40*"-")
 
-    b = 128  # Set batch size.
-    e = 20  # Set number of epochs to be trained.
-
     # Get distributed dataloaders on all ranks.
-    train_loader, valid_loader = dataloader(batch_size=b, num_workers=2, use_subset=args.use_subset, path_to_data=args.data_path)
+    train_loader, valid_loader = dataloader(batch_size=args.batchsize, num_workers=2, use_subset=args.use_subset, path_to_data=args.data_path)
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
     model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
@@ -63,7 +66,7 @@ def main():
     # Train model.
     valid_loss_history, train_acc_history, valid_acc_history, time_history = train_model(
         model=model,
-        num_epochs=e,
+        num_epochs=args.num_epochs,
         train_loader=train_loader,
         valid_loader=valid_loader,
         optimizer=optimizer,

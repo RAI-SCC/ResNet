@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #SBATCH --job-name=resnet
-#SBATCH --partition=dev_accelerated
-#SBATCH --time=00:05:00
+#SBATCH --partition=accelerated
+#SBATCH --time=00:10:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-p0021348
-#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet/ResNet/experiments/job_%j/job_%j"
+#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet/ResNet/experiments/job_%j/slurm_%j"
 #SBATCH --exclusive
 
 
@@ -33,10 +33,9 @@ export DATA_PATH="/hkfs/home/dataset/datasets/imagenet-2012/original/imagenet-ra
 PERUN_OUT="$RESDIR/perun"
 PERUN_APP_NAME="perun"
 
-perun sensors
 cd ${RESDIR}
 
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
-        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --use_subset True --data_path ${DATA_PATH}"
+        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --use_subset True --data_path ${DATA_PATH} --batchsize 2 --num_epochs 5"

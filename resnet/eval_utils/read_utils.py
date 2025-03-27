@@ -118,7 +118,7 @@ def get_power(
     Returns
     _______
     data : dict
-        Contains the cpu or ram data saved as np.arrays.
+        Contains the gpu power data saved as np.arrays.
     """
     h5_gpu_power_path = f"{h5_gpu_base_path}CUDA:{num}_POWER/raw_data/values"
     power = np.array(h5val[h5_gpu_power_path])
@@ -126,6 +126,31 @@ def get_power(
     timesteps = np.array(h5val[h5_gpu_time_path])
     return power, timesteps
 
+def get_gpu_mem(
+    h5val=None, h5_gpu_base_path: str = None, num: int = None
+) -> [np.array, np.array]:
+    """
+    Get gpu memory data from corresponding hdf5 file provided by perun.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    h5_base_path: str
+        Internal path within hdf5 file.
+    num : int
+        Index of corresponding core
+
+    Returns
+    _______
+    data : dict
+        Contains the gpu memory data saved as np.arrays.
+    """
+    h5_gpu_mem_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/values"
+    mem = np.array(h5val[h5_gpu_mem_path])
+    h5_gpu_time_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/timesteps"
+    timesteps = np.array(h5val[h5_gpu_time_path])
+    return mem, timesteps
 
 def get_energy(
     h5val=None, h5_path: str = None, num: int = None, key: str = None
@@ -195,9 +220,13 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
             fac = 0.001  # milliWatt to Watt
             power, timesteps = get_power(h5val, h5_path, num)
             power = power * fac
+            mem_fac = 1e-9 # B to GB
+            mem, _ = get_gpu_mem(h5val, h5_path, num)
+            mem = mem * mem_fac
             data[num]["power"] = power
             data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
             data[num]["timesteps"] = timesteps
+            data[num]['memory'] = mem
     return data
 
 

@@ -111,11 +111,15 @@ def train_model(
     time_history : list
         History of elapsed time corresponding to lists above.
     """
+    
 
     rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()
     (valid_loss_history, train_loss_history) = [], []
     (train_acc_history, valid_acc_history, time_history) = [], [], []
+    if rank == 0:
+        print("Start Training")
+        print(20*"-")
 
     for epoch in range(num_epochs):  # Loop over epochs.
         train_loader.sampler.set_epoch(epoch)
