@@ -19,7 +19,7 @@ def main():
     #  num_worker, batch size, epochs, ResNet size
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use_subset",default=False,type=bool)
+    parser.add_argument("--use_subset",action="store_true") # a tag to use data subset for debugging
     parser.add_argument("--data_path",default="./",type=str)
     parser.add_argument("--batchsize",default=1,type=int)
     parser.add_argument("--num_epochs",default=2,type=int)
@@ -43,16 +43,25 @@ def main():
         backend="nccl", rank=rank, world_size=world_size, init_method="env://"
     )
 
-    print(f"CUDA Available: {torch.cuda.is_available()}")
-    print(f"Number of GPUs: {torch.cuda.device_count()}")
-    print(f"Global Batch Size: {args.batchsize}")
-    print(f"Local Batch Size: {int(args.batchsize / world_size)}")
-    print(40*"-")
+    if rank == 0:
+        print(f"CUDA Available: {torch.cuda.is_available()}")
+        print(f"Number of GPUs: {world_size}")
+        print(f"Global Batch Size: {args.batchsize}")
+        print(f"Local Batch Size: {int(args.batchsize / world_size)}")
+        print(f"Max Epoch: {args.num_epochs}")
+        print(f"Use Data Subset: {args.use_subset}")
+        print(40*"-")
     if dist.is_initialized():
         print(f"Current GPU: {torch.cuda.current_device()}")
         print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
         print(f"Slurm rank / world size: {rank} / {world_size}")
         print(f"Torch rank / world size: {torch.distributed.get_rank()} / {torch.distributed.get_world_size()}")
+        print(40*"-")
+    else: 
+        print(f"CUDA Available: {torch.cuda.is_available()}")
+        print(f"Batch Size: {args.batchsize}")
+        print(f"Max Epoch: {args.num_epochs}")
+        print(f"Use Data Subset: {args.use_subset}")
         print(40*"-")
 
     # Get distributed dataloaders on all ranks.
