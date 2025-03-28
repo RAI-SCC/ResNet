@@ -119,7 +119,7 @@ def train_model(
     (train_acc_history, valid_acc_history, time_history) = [], [], []
     if rank == 0:
         print("Start Training")
-        print(20*"-")
+        print(40*"-")
 
     for epoch in range(num_epochs):  # Loop over epochs.
         train_loader.sampler.set_epoch(epoch)
