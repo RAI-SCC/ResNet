@@ -38,4 +38,4 @@ cd ${RESDIR}
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
-        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --use_subset True --data_path ${DATA_PATH} --batchsize 2 --num_epochs 5"
+        perun monitor --log_lvl DEBUG monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --use_subset True --data_path ${DATA_PATH} --batchsize 2 --num_epochs 5"
