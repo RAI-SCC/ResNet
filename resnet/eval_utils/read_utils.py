@@ -3,6 +3,15 @@ import scipy as sp
 import h5py
 
 
+def print_attrs(name, obj):
+    """
+    Shows the hdf5 file structure
+    """
+    print(name)
+    for key, val in obj.attrs.items():
+        print(f"  - Attribute: {key}: {val}")
+
+
 def get_cores(h5val, h5_path: str = None, key: str = None) -> list:
     """
     Get core numbers.
@@ -62,36 +71,31 @@ def get_h5_paths(h5val) -> [list, list]:
     return h5_paths, nodes
 
 
-def adjust_energy(fac: float = 1, energy: np.array = None, key: str = None) -> np.array:
+def adjust_energy(energy: np.array = None, max_val: float = None) -> np.array:
     """
     Manipulates energy values from perun hdf5 file to get correct values.
 
     Parameters
     __________
-    fac : float
-        Scaling factor.
     energy : np.array
         Energy values to b e adjusted.
     key : str
         cpu or ram
+    max_val : float
+        Device overflow limit.
 
     Returns
     _______
     energy_adjusted : np.array
         Adjusted energy values.
     """
-    e_start = energy[0] * fac
-    max_val = 0
-    if key == "ram":
-        max_val = 65712999613 * fac
-    elif key == "cpu":
-        max_val = 262143328850 * fac
+    e_start = energy[0]
     energy_adjusted = []
     e_prev = 0
     shift_num = 0
     for val in energy:
-        e = val * fac - e_start
-        if val * fac + shift_num * max_val < e_prev:
+        e = val - e_start
+        if val + shift_num * max_val < e_prev:
             shift_num = shift_num + 1
         e = e + shift_num * max_val
         e_prev = e
@@ -101,7 +105,7 @@ def adjust_energy(fac: float = 1, energy: np.array = None, key: str = None) -> n
 
 
 def get_power(
-    h5val=None, h5_gpu_base_path: str = None, num: int = None
+    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
 ) -> [np.array, np.array]:
     """
     Get gpu power data from corresponding hdf5 file provided by perun.
@@ -114,16 +118,27 @@ def get_power(
         Internal path within hdf5 file.
     num : int
         Index of corresponding core
+    key : str
+        gou, cpu, or ram
 
     Returns
     _______
     data : dict
         Contains the gpu power data saved as np.arrays.
     """
-    h5_gpu_power_path = f"{h5_gpu_base_path}CUDA:{num}_POWER/raw_data/values"
-    power = np.array(h5val[h5_gpu_power_path])
-    h5_gpu_time_path = f"{h5_gpu_base_path}CUDA:{num}_POWER/raw_data/timesteps"
-    timesteps = np.array(h5val[h5_gpu_time_path])
+    if key == "gpu":
+        h5_power_path = f"{h5_base_path}CUDA:{num}_POWER/raw_data/values"
+        h5_time_path = f"{h5_base_path}CUDA:{num}_POWER/raw_data/timesteps"
+    if key == "ram":
+        h5_power_path = f"{h5_base_path}ram_{num}_dram/raw_data/values"
+        h5_time_path = f"{h5_base_path}ram_{num}_dram/raw_data/timesteps"
+    if key == "cpu":
+        h5_power_path = f"{h5_base_path}cpu_{num}_package-{num}/raw_data/values"
+        h5_time_path = f"{h5_base_path}cpu_{num}_package-{num}/raw_data/timesteps"
+    power = np.array(h5val[h5_power_path])
+    mag = float(h5val[h5_power_path].attrs["mag"])
+    power = power* mag
+    timesteps = np.array(h5val[h5_time_path])
     return power, timesteps
 
 
@@ -151,6 +166,8 @@ def get_gpu_mem(
     """
     h5_gpu_mem_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/values"
     mem = np.array(h5val[h5_gpu_mem_path])
+    mag = h5val[h5_gpu_mem_path].attrs["mag"]
+    mem = mem*mag
     h5_gpu_time_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/timesteps"
     timesteps = np.array(h5val[h5_gpu_time_path])
     return mem, timesteps
@@ -181,15 +198,17 @@ def get_energy(
     energy = np.array([])
     timesteps = np.array([])
     if key == "ram":
-        h5_ram_energy_path = f"{h5_path}ram_{num}_dram/raw_data/values"
-        energy = np.array(h5val[h5_ram_energy_path])
-        h5_ram_time_path = f"{h5_path}ram_{num}_dram/raw_data/timesteps"
-        timesteps = np.array(h5val[h5_ram_time_path])
+        h5_energy_path = f"{h5_path}ram_{num}_dram/raw_data/alt_values"
+        h5_time_path = f"{h5_path}ram_{num}_dram/raw_data/timesteps"
     if key == "cpu":
-        h5_cpu_energy_path = f"{h5_path}cpu_{num}_package-{num}/raw_data/values"
-        energy = np.array(h5val[h5_cpu_energy_path])
-        h5_cpu_time_path = f"{h5_path}cpu_{num}_package-{num}/raw_data/timesteps"
-        timesteps = np.array(h5val[h5_cpu_time_path])
+        h5_energy_path = f"{h5_path}cpu_{num}_package-{num}/raw_data/alt_values"
+        h5_time_path = f"{h5_path}cpu_{num}_package-{num}/raw_data/timesteps"
+    energy = np.array(h5val[h5_energy_path])
+    mag = h5val[h5_energy_path].attrs["mag"]
+    max_val = h5val[h5_energy_path].attrs["max_val"] * mag
+    energy = energy * mag
+    energy = adjust_energy(energy, max_val)
+    timesteps = np.array(h5val[h5_time_path])
     return energy, timesteps
 
 
@@ -216,19 +235,14 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
     cores = get_cores(h5val, h5_path, key=key)
     for num in cores:
         data[num] = {}  # Collects data for each core.
-        if key in ["ram", "cpu"]:
-            fac = 0.000001  # muJ to J
-            energy, timesteps = get_energy(h5val, h5_path, num, key)
-            data[num]["energy"] = adjust_energy(fac, energy, key)
+        power, timesteps = get_power(h5val, h5_path, num, key)
         if key == "gpu":
-            power_fac = 0.001  # milliWatt to Watt
-            mem_fac = 1024 ** 3  # B to GB
-            power, timesteps = get_power(h5val, h5_path, num)
             mem, _ = get_gpu_mem(h5val, h5_path, num)
-            data[num]["power"] = power * power_fac
-            data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
-            data[num]["timesteps"] = timesteps
-            data[num]['memory'] = mem * mem_fac
+            data[num]['memory'] = mem * 1024 ** 3  # B to GB
+        data[num]["power"] = power
+        data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
+        data[num]["timesteps"] = timesteps
+
     return data
 
 
