@@ -20,6 +20,7 @@ def main():
     parser.add_argument("--data_path",default="./",type=str)
     parser.add_argument("--batchsize",default=1,type=int)
     parser.add_argument("--num_epochs",default=2,type=int)
+    parser.add_argument("--num_workers",default=2,type=int)
     args = parser.parse_args()
     
     start_time = time.perf_counter()
@@ -62,7 +63,7 @@ def main():
         print(40*"-")
 
     # Get distributed dataloaders on all ranks.
-    train_loader, valid_loader = dataloader(batch_size=args.batchsize, num_workers=2, use_subset=args.use_subset, path_to_data=args.data_path)
+    train_loader, valid_loader = dataloader(batch_size=args.batchsize, num_workers=args.num_workers, use_subset=args.use_subset, path_to_data=args.data_path)
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
     model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
