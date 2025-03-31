@@ -25,7 +25,7 @@ dependencies = [
     "torch",
     "torchvision",
     "mpi4py>=3.1",
-    "perun[mpi,nvidia,rocm]",
+    "perun[mpi,nvidia,rocm]>=0.8.9",
     "matplotlib"
 ]
 

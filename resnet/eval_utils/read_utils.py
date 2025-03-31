@@ -126,6 +126,7 @@ def get_power(
     timesteps = np.array(h5val[h5_gpu_time_path])
     return power, timesteps
 
+
 def get_gpu_mem(
     h5val=None, h5_gpu_base_path: str = None, num: int = None
 ) -> [np.array, np.array]:
@@ -143,14 +144,17 @@ def get_gpu_mem(
 
     Returns
     _______
-    data : dict
+    mem : dict
         Contains the gpu memory data saved as np.arrays.
+    timesteps : dict
+        Contains timesteps of the gpu memory data saved as np.arrays.
     """
     h5_gpu_mem_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/values"
     mem = np.array(h5val[h5_gpu_mem_path])
     h5_gpu_time_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/timesteps"
     timesteps = np.array(h5val[h5_gpu_time_path])
     return mem, timesteps
+
 
 def get_energy(
     h5val=None, h5_path: str = None, num: int = None, key: str = None
@@ -217,16 +221,14 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
             energy, timesteps = get_energy(h5val, h5_path, num, key)
             data[num]["energy"] = adjust_energy(fac, energy, key)
         if key == "gpu":
-            fac = 0.001  # milliWatt to Watt
+            power_fac = 0.001  # milliWatt to Watt
+            mem_fac = 1024 ** 3  # B to GB
             power, timesteps = get_power(h5val, h5_path, num)
-            power = power * fac
-            mem_fac = 1e-9 # B to GB
             mem, _ = get_gpu_mem(h5val, h5_path, num)
-            mem = mem * mem_fac
-            data[num]["power"] = power
+            data[num]["power"] = power * power_fac
             data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
             data[num]["timesteps"] = timesteps
-            data[num]['memory'] = mem
+            data[num]['memory'] = mem * mem_fac
     return data
 
 

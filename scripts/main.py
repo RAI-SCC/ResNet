@@ -5,7 +5,6 @@ import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from perun import monitor
-
 import argparse
 
 from resnet.model import ResNet
@@ -15,8 +14,6 @@ from resnet.dataloader import dataloader
 
 @monitor()
 def main():
-    #  Adjust hyperparameters:
-    #  num_worker, batch size, epochs, ResNet size
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--use_subset",action="store_true") # a tag to use data subset for debugging
