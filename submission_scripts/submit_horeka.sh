@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name=32g128b100e
+#SBATCH --job-name=16g4096b100e
 #SBATCH --partition=accelerated
-#SBATCH --time=2-00:00:00
-#SBATCH --nodes=8
+#SBATCH --time=00:30:00
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-p0021348
-#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet/ResNet/experiments/32g128b100e/%j/slurm_%j"
+#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet/ResNet/experiments/16g4096b100e/%j/slurm_%j"
 #SBATCH --exclusive
 
 module purge
@@ -23,8 +23,9 @@ echo "MASTER_ADDR="$MASTER_ADDR
 source /hkfs/work/workspace/scratch/vm6493-resnet/venv/bin/activate
 
 export NUM_GPUS=32
-export BATCHSIZE=128
-export NUM_EPOCHS=100
+export BATCHSIZE=4096
+export NUM_EPOCHS=3
+export NUM_WORKERS=8
 
 export PYDIR=/hkfs/work/workspace/scratch/vm6493-resnet/ResNet
 export EXP_BASE=${PYDIR}/experiments
@@ -46,4 +47,4 @@ cd ${RESDIR}
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
-        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS}"
+        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS}"
