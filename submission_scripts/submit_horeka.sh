@@ -26,6 +26,7 @@ export NUM_GPUS=32
 export BATCHSIZE=4096
 export NUM_EPOCHS=3
 export NUM_WORKERS=8
+export RANDOM_SEED=0
 
 export PYDIR=/hkfs/work/workspace/scratch/vm6493-resnet/ResNet
 export EXP_BASE=${PYDIR}/experiments
@@ -44,7 +45,8 @@ cd ${RESDIR}
 # --data_path: path to training, valid and test data
 # --batchsize: global batch size
 # --num_epochs: number of epochs the model will be trained
+# --seed: to enable deterministic training
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
-        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS}"
+        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --seed ${RANDOM_SEED}"
