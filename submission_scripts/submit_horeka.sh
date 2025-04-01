@@ -35,9 +35,9 @@ export RANDOM_SEED=0
 
 export PYDIR=/hkfs/work/workspace/scratch/vm6493-resnet/ResNet
 export EXP_BASE=${PYDIR}/experiments
-export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${BATCHSIZE}b${NUM_EPOCHS}e
-mkdir(EXP_TYPE)
-EXPORT RESDIR= $EXP_TYPE/${SLURM_JOB_ID}
+export EXP_TYPE=${EXP_BASE}/test #${EXP_BASE}/${NUM_GPUS}g${BATCHSIZE}b${NUM_EPOCHS}e
+mkdir ${EXP_TYPE}
+export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
 echo $RESDIR
 mkdir ${RESDIR}
 export DATA_PATH="/hkfs/home/dataset/datasets/imagenet-2012/original/imagenet-raw/ILSVRC/Data/CLS-LOC/"
