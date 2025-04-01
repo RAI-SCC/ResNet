@@ -55,13 +55,15 @@ def main():
     )
 
     if rank == 0:
+        if args.seed is not None:
+            print(f"Deterministic training is enabled")
         print(f"CUDA Available: {torch.cuda.is_available()}")
         print(f"Number of GPUs: {world_size}")
         print(f"Global Batch Size: {args.batchsize}")
         print(f"Local Batch Size: {int(args.batchsize / world_size)}")
         print(f"Max Epoch: {args.num_epochs}")
         print(f"Use Data Subset: {args.use_subset}")
-        print(f"Number of Workers: {args.num_workers}")
+        print(f"Number of Workers: {args.num_workers}")  
         print(40*"-")
     if dist.is_initialized():
         print(f"Current GPU: {torch.cuda.current_device()}")
@@ -90,10 +92,15 @@ def main():
             use_subset=args.use_subset, 
             path_to_data=args.data_path, 
             worker_init_fn=seed_worker,
-            generator=g,
+            generator=g
         )
     else: 
-        train_loader, valid_loader = dataloader(batch_size=args.batchsize, num_workers=args.num_workers, use_subset=args.use_subset, path_to_data=args.data_path)
+        train_loader, valid_loader = dataloader(
+            batch_size=args.batchsize, 
+            num_workers=args.num_workers, 
+            use_subset=args.use_subset, 
+            path_to_data=args.data_path
+        )
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
     model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
