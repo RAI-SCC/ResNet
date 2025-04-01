@@ -8,6 +8,7 @@ from perun import monitor
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau
 
 from resnet.model import ResNet
 from resnet.train import train_model
@@ -95,20 +96,31 @@ def main():
             path_to_data=args.data_path
         )
 
+    reference_lr =.1
+    warmup_epochs = 5
+    linear_scaling_factor = args.batchsize / 256 # lr factor to resolve large batch effect with batch size 256 as baseline: https://arxiv.org/pdf/1706.02677
+    max_lr = reference_lr * linear_scaling_factor  # Final learning rate after warmup
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
     model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.1, weight_decay=0.0001)
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=1, weight_decay=0.0001)
+    
+    def warmup_fn(epoch):
+        return epoch / warmup_epochs * max_lr
+
+    warmup_scheduler = LambdaLR(optimizer,lr_lambda=warmup_fn)
+    lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
     # Train model.
-    valid_loss_history, train_acc_history, valid_acc_history, time_history = train_model(
+    valid_loss_history, train_acc_history, valid_acc_history, lr_history, time_history = train_model(
         model=model,
         num_epochs=args.num_epochs,
         train_loader=train_loader,
         valid_loader=valid_loader,
         optimizer=optimizer,
         start_time=start_time,
-        lr_scheduler=lr_scheduler
+        warmup_scheduler=warmup_scheduler,
+        lr_scheduler=lr_scheduler,
+        warmup_epochs=warmup_epochs
     )
 
     dist.destroy_process_group()
