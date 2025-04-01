@@ -87,7 +87,9 @@ def train_model(
     valid_loader,
     optimizer,
     start_time,
-    lr_scheduler
+    warmup_scheduler,
+    lr_scheduler,
+    warmup_epochs=0
 ):
     """
     Train model in DDP fashion.
@@ -106,8 +108,12 @@ def train_model(
         optimizer to use
     start_time : float
         Start time of main
+    warmup_scheduler :
+        For gradually increasing the lr
     lr_scheduler :
         LR scheduler
+    warmup_epochs : int
+        num of epochs for lr get reach target value 
 
     Returns
     _______
@@ -117,6 +123,8 @@ def train_model(
         History of training accuracy.
     valid_acc_history : list
         History of validation accuracy.
+    lr : list
+        History of learning rate
     time_history : list
         History of elapsed time corresponding to lists above.
     """
@@ -124,12 +132,14 @@ def train_model(
 
     rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()
-    (valid_loss_history, train_loss_history, time_history) = [], [], []
+
+    (valid_loss_history, train_loss_history, time_history, lr_history) = [], [], [], []
     (top1_acc_train_history, top5_acc_train_history) = [], []
     (top1_acc_valid_history, top5_acc_valid_history) = [], []
+    
     if rank == 0:
         print("Start Training")
-        print(20*"-")
+        print(40*"-")
 
     for epoch in range(num_epochs):  # Loop over epochs.
         train_loader.sampler.set_epoch(epoch)
@@ -177,8 +187,13 @@ def train_model(
             top1_acc_valid_history.append(top1_acc_valid)
             top5_acc_valid_history.append(top5_acc_valid)
             time_history.append(time_elapsed)
+            lr_history.append(optimizer.state_dict()['param_groups'][0]['lr'])
             # Scheduler Step
-            lr_scheduler.step(valid_loss)
+            if epoch < warmup_epochs:
+                warmup_scheduler.step()
+            else:
+                lr_scheduler.step(valid_loss)
+            
             if rank == 0:
                 print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
                       f'| Validation Loss: {valid_loss:.4f} '
@@ -187,7 +202,10 @@ def train_model(
                       f'| Top1-Train: {top1_acc_train :.2f}% '
                       f'| Top1-Validation: {top1_acc_valid :.2f}% '
                       f'| Top5-Train: {top5_acc_train :.2f}% '
-                      f'| Top5-Validation: {top5_acc_valid :.2f}%')
+                      f'| Top5-Validation: {top5_acc_valid :.2f}% '
+                      f'| LR: {optimizer.state_dict()['param_groups'][0]['lr'] :.6f} '
+                      f'| Time: {time_elapsed :.2f} min'
+                     )
 
                 torch.save({'epoch': epoch, 'model_state': model.state_dict(),
                             'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
@@ -200,5 +218,6 @@ def train_model(
         torch.save(top5_acc_train_history, f'train_top5.pt')
         torch.save(top5_acc_valid_history, f'valid_top5.pt')
         torch.save(time_history, f'time.pt')
+        torch.save(lr_history, f'lr.pt')
 
-    return valid_loss_history, top1_acc_train_history, top1_acc_valid_history, time_history
+    return valid_loss_history, top1_acc_train_history, top1_acc_valid_history, lr_history, time_history

@@ -1,16 +1,14 @@
 #!/bin/bash
 
-#SBATCH --job-name=resnet
+#SBATCH --job-name=test
 #SBATCH --partition=accelerated
 #SBATCH --time=00:10:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-p0021348
-#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet/ResNet/experiments/job_%j/slurm_%j"
+#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet/ResNet/experiments/test/%j/slurm_%j"
 #SBATCH --exclusive
-
-
 
 module purge
 module load devel/cuda/12.2
@@ -24,10 +22,24 @@ echo "MASTER_ADDR="$MASTER_ADDR
 
 source /hkfs/work/workspace/scratch/vm6493-resnet/venv/bin/activate
 
-export CURRENTDIR=$(pwd)
+if [ -n "$SLURM_NPROCS" ]; then
+    export NUM_GPUS=$SLURM_NPROCS
+else
+    export NUM_GPUS=0    
+fi
+export LOCAL_BATCHSIZE=256
+export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
+export NUM_EPOCHS=10
+export NUM_WORKERS=8
+export RANDOM_SEED=0
+
 export PYDIR=/hkfs/work/workspace/scratch/vm6493-resnet/ResNet
 export EXP_BASE=${PYDIR}/experiments
-export RESDIR=${EXP_BASE}/job_${SLURM_JOB_ID}
+export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${BATCHSIZE}b${NUM_EPOCHS}e
+mkdir ${EXP_TYPE}
+export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
+echo $RESDIR
+mkdir ${RESDIR}
 export DATA_PATH="/hkfs/home/dataset/datasets/imagenet-2012/original/imagenet-raw/ILSVRC/Data/CLS-LOC/"
 
 PERUN_OUT="$RESDIR/perun"
@@ -35,7 +47,14 @@ PERUN_APP_NAME="perun"
 
 cd ${RESDIR}
 
+# arguments for the training:
+# --use_subset: optional. if used, then only small amount of data set is used in training for faster debugging
+# --data_path: path to training, valid and test data
+# --batchsize: global batch size
+# --num_epochs: number of epochs the model will be trained
+# --seed: to enable deterministic training
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
-        perun monitor --log_lvl DEBUG monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py --use_subset True --data_path ${DATA_PATH} --batchsize 2 --num_epochs 5"
+        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py \
+        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --seed ${RANDOM_SEED} --use_subset"

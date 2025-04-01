@@ -13,4 +13,4 @@ experiments/
 
 *.log
 
-./scripts/results.ipynb
+scripts/results.ipynb
