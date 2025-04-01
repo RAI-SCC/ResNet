@@ -80,19 +80,12 @@ def main():
 
     # Get distributed dataloaders on all ranks.
     if args.seed is not None:
-        def seed_worker(worker_id):
-            worker_seed = torch.initial_seed() % 2**32
-            numpy.random.seed(worker_seed)
-            random.seed(worker_seed)
-        g = torch.Generator()
-        g.manual_seed(0)
         train_loader, valid_loader = dataloader(
             batch_size=args.batchsize, 
             num_workers=args.num_workers, 
             use_subset=args.use_subset, 
-            path_to_data=args.data_path, 
-            worker_init_fn=seed_worker,
-            generator=g
+            path_to_data=args.data_path,
+            seed_training=True
         )
     else: 
         train_loader, valid_loader = dataloader(
