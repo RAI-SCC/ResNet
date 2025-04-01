@@ -1,11 +1,13 @@
 import os
 import time
+import random
+import argparse
+import numpy
+from perun import monitor
 
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-from perun import monitor
-import argparse
 
 from resnet.model import ResNet
 from resnet.train import train_model
@@ -14,6 +16,8 @@ from resnet.dataloader import dataloader
 
 @monitor()
 def main():
+    #  Adjust hyperparameters:
+    #  num_worker, batch size, epochs, ResNet size
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--use_subset",action="store_true") # a tag to use data subset for debugging
@@ -21,7 +25,16 @@ def main():
     parser.add_argument("--batchsize",default=1,type=int)
     parser.add_argument("--num_epochs",default=2,type=int)
     parser.add_argument("--num_workers",default=2,type=int)
+    parser.add_argument('--seed', default=None, type=int, help='seed for initializing training. ')
     args = parser.parse_args()
+
+    if args.seed is not None:
+        random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        torch.cuda.manual_seed(args.seed)  
+        torch.cuda.manual_seed_all(args.seed)
+        torch.backends.cudnn.deterministic = True  # Ensures deterministic behavior
+        torch.backends.cudnn.benchmark = False 
     
     start_time = time.perf_counter()
 
@@ -42,12 +55,15 @@ def main():
     )
 
     if rank == 0:
+        if args.seed is not None:
+            print(f"Deterministic training is enabled")
         print(f"CUDA Available: {torch.cuda.is_available()}")
         print(f"Number of GPUs: {world_size}")
         print(f"Global Batch Size: {args.batchsize}")
         print(f"Local Batch Size: {int(args.batchsize / world_size)}")
         print(f"Max Epoch: {args.num_epochs}")
         print(f"Use Data Subset: {args.use_subset}")
+        print(f"Number of Workers: {args.num_workers}")  
         print(40*"-")
     if dist.is_initialized():
         print(f"Current GPU: {torch.cuda.current_device()}")
@@ -63,7 +79,21 @@ def main():
         print(40*"-")
 
     # Get distributed dataloaders on all ranks.
-    train_loader, valid_loader = dataloader(batch_size=args.batchsize, num_workers=args.num_workers, use_subset=args.use_subset, path_to_data=args.data_path)
+    if args.seed is not None:
+        train_loader, valid_loader = dataloader(
+            batch_size=args.batchsize, 
+            num_workers=args.num_workers, 
+            use_subset=args.use_subset, 
+            path_to_data=args.data_path,
+            seed_training=True
+        )
+    else: 
+        train_loader, valid_loader = dataloader(
+            batch_size=args.batchsize, 
+            num_workers=args.num_workers, 
+            use_subset=args.use_subset, 
+            path_to_data=args.data_path
+        )
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
     model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
