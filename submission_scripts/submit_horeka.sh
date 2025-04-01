@@ -48,7 +48,7 @@ PERUN_APP_NAME="perun"
 cd ${RESDIR}
 
 # arguments for the training:
-# --use_subset: bool, for faster debugging
+# --use_subset: optional. if used, then only small amount of data set is used in training for faster debugging
 # --data_path: path to training, valid and test data
 # --batchsize: global batch size
 # --num_epochs: number of epochs the model will be trained
@@ -57,4 +57,4 @@ srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
         perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py \
-        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --seed ${RANDOM_SEED} --use_subset"
+        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --seed ${RANDOM_SEED}"
