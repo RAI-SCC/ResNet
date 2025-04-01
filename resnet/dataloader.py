@@ -26,8 +26,7 @@ def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = Fa
     # Define transforms
     train_transform = tv.transforms.Compose(
         [
-            tv.transforms.Resize((image_size, image_size)),
-            tv.transforms.RandomCrop(64),
+            tv.transforms.RandomResizedCrop(size=image_size, scale=(0.5, 1.0)),
             tv.transforms.RandomHorizontalFlip(),
             tv.transforms.ToTensor(),
             tv.transforms.Normalize(
