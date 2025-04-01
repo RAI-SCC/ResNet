@@ -2,10 +2,10 @@ import torch
 import torchvision as tv
 from perun import monitor
 import numpy as np
-
+import random
 
 @monitor()
-def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = False, path_to_data: str = "./"):
+def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = False, path_to_data: str = "./", seed_training: bool = False):
     """
     Get distributed ImageNet dataloaders for training and validation in a DDP setting.
 
@@ -69,18 +69,41 @@ def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = Fa
         drop_last=True,
     )
 
-    # Define loader
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        sampler=train_sampler,
-        num_workers=num_workers,
-    )
-    valid_loader = torch.utils.data.DataLoader(
-        valid_dataset,
-        batch_size=batch_size,
-        sampler=valid_sampler,
-        num_workers=num_workers,
-    )
-
+    if seed_training is True:
+        def seed_worker(worker_id):
+            worker_seed = torch.initial_seed() % 2**32
+            np.random.seed(worker_seed)
+            random.seed(worker_seed)
+        g = torch.Generator()
+        g.manual_seed(0)
+    
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=train_sampler,
+            num_workers=num_workers,
+            worker_init_fn=seed_worker,
+            generator=g
+        )
+        valid_loader = torch.utils.data.DataLoader(
+            valid_dataset,
+            batch_size=batch_size,
+            sampler=valid_sampler,
+            num_workers=num_workers,
+            worker_init_fn=seed_worker,
+            generator=g
+        )
+    else: 
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=train_sampler,
+            num_workers=num_workers,
+        )
+        valid_loader = torch.utils.data.DataLoader(
+            valid_dataset,
+            batch_size=batch_size,
+            sampler=valid_sampler,
+            num_workers=num_workers,
+        )
     return train_loader, valid_loader
