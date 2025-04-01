@@ -128,7 +128,6 @@ def train_model(
     time_history : list
         History of elapsed time corresponding to lists above.
     """
-    
 
     rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()
@@ -203,9 +202,8 @@ def train_model(
                       f'| Top1-Validation: {top1_acc_valid :.2f}% '
                       f'| Top5-Train: {top5_acc_train :.2f}% '
                       f'| Top5-Validation: {top5_acc_valid :.2f}% '
-                      f'| LR: {optimizer.state_dict()['param_groups'][0]['lr'] :.6f} '
-                      f'| Time: {time_elapsed :.2f} min'
-                     )
+                      f'| LR: {optimizer.state_dict()["param_groups"][0]["lr"] :.6f} '
+                      f'| Time: {time_elapsed :.2f} min')
 
                 torch.save({'epoch': epoch, 'model_state': model.state_dict(),
                             'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
