@@ -56,7 +56,7 @@ def get_right(model, data_loader):
         Loss
     """
     with torch.no_grad():
-        top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0
+        top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
         for i, (features, targets) in enumerate(data_loader):
             features = features.cuda()
             targets = targets.float().cuda()
@@ -76,6 +76,7 @@ def get_right(model, data_loader):
         total_num_examples = torch.Tensor([total_num_examples]).cuda()
         top1_pred = torch.Tensor([top1_pred]).cuda()
         top5_pred = torch.Tensor([top5_pred]).cuda()
+        loss /= (i+1)
         loss = torch.Tensor([loss]).cuda()
     return total_num_examples, loss, top1_pred, top5_pred
 
@@ -177,8 +178,8 @@ def train_model(
             top5_acc_train = top5_pred_train.item() / num_train.item() * 100
             top1_acc_valid = top1_pred_valid.item() / num_valid.item() * 100
             top5_acc_valid = top5_pred_valid.item() / num_valid.item() * 100
-            valid_loss /= num_valid.item()
-            train_loss /= num_train.item()
+            valid_loss /= world_size
+            train_loss /= world_size
             # append to history
             valid_loss_history.append(valid_loss.item())
             train_loss_history.append(train_loss.item())
