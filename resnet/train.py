@@ -56,7 +56,7 @@ def get_right(model, data_loader):
         Loss
     """
     with torch.no_grad():
-        top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0
+        top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
         for i, (features, targets) in enumerate(data_loader):
             features = features.cuda()
             targets = targets.float().cuda()
