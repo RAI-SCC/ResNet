@@ -56,7 +56,7 @@ def get_right(model, data_loader):
         Loss
     """
     with torch.no_grad():
-        top1_pred, top5_pred, total_num_examples = 0, 0, 0
+        top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
         for i, (features, targets) in enumerate(data_loader):
             features = features.cuda()
             targets = targets.float().cuda()
@@ -65,7 +65,7 @@ def get_right(model, data_loader):
             num_examples = targets.size(0)
             total_num_examples += num_examples
 
-            loss = torch.nn.functional.cross_entropy(output, targets.long())
+            loss += torch.nn.functional.cross_entropy(output, targets.long())
             top1_labels = torch.topk(output, 1, dim=1).indices  # Top-1 prediction
             top1_labels = top1_labels.reshape(top1_labels.shape[0])
             top5_labels = torch.topk(output, 5, dim=1).indices  # Top-5 predictions
@@ -76,6 +76,8 @@ def get_right(model, data_loader):
         total_num_examples = torch.Tensor([total_num_examples]).cuda()
         top1_pred = torch.Tensor([top1_pred]).cuda()
         top5_pred = torch.Tensor([top5_pred]).cuda()
+        loss /= (i+1)
+        loss = torch.Tensor([loss]).cuda()
     return total_num_examples, loss, top1_pred, top5_pred
 
 
