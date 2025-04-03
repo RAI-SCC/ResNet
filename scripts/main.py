@@ -102,7 +102,10 @@ def main():
     # Define schedulers
     reference_lr = .1
     warmup_epochs = 5
-    linear_scaling_factor = args.batchsize / 256  # lr factor to resolve large batch effect with batch size 256 as baseline: https://arxiv.org/pdf/1706.02677
+    if args.batchsize > 256:
+        linear_scaling_factor = args.batchsize / 256  # lr factor to resolve large batch effect with batch size 256 as baseline: https://arxiv.org/pdf/1706.02677
+    else: 
+        linear_scaling_factor = 1
     max_lr = reference_lr * linear_scaling_factor  # Final learning rate after warmup
 
     def warmup_fn(epoch):
