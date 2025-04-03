@@ -8,7 +8,7 @@ class ResNet(torch.nn.Module):
     """
     def __init__(self):
         super().__init__()
-        self.model = torchvision.models.resnet18(weights=None)
+        self.model = torchvision.models.resnet50(weights=None)
 
     def forward(self, x):
         return self.model(x)

@@ -82,7 +82,7 @@ def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = Fa
     
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=batch_size,
+        batch_size=batch_size // torch.distributed.get_world_size(),
         sampler=train_sampler,
         num_workers=num_workers,
         worker_init_fn=worker_init_fn,
@@ -90,7 +90,7 @@ def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = Fa
     )
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
-        batch_size=batch_size,
+        batch_size=batch_size // torch.distributed.get_world_size(),
         sampler=valid_sampler,
         num_workers=num_workers,
         worker_init_fn=worker_init_fn,
