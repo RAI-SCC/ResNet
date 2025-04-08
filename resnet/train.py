@@ -178,11 +178,11 @@ def train_model(
             top5_acc_train = top5_pred_train.item() / num_train.item() * 100
             top1_acc_valid = top1_pred_valid.item() / num_valid.item() * 100
             top5_acc_valid = top5_pred_valid.item() / num_valid.item() * 100
-            valid_loss /= world_size
-            train_loss /= world_size
+            valid_loss = valid_loss.item() / world_size
+            train_loss = train_loss.item() / world_size
             # append to history
-            valid_loss_history.append(valid_loss.item())
-            train_loss_history.append(train_loss.item())
+            valid_loss_history.append(valid_loss)
+            train_loss_history.append(train_loss)
             top1_acc_train_history.append(top1_acc_train)
             top5_acc_train_history.append(top5_acc_train)
             top1_acc_valid_history.append(top1_acc_valid)
@@ -193,7 +193,7 @@ def train_model(
             if epoch < warmup_epochs:
                 warmup_scheduler.step()
             else:
-                lr_scheduler.step(valid_loss)
+                lr_scheduler.step()
             
             if rank == 0:
                 print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
