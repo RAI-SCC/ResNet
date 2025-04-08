@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name=4g32b3e
+#SBATCH --job-name=256g32b4w100e
 #SBATCH --partition=accelerated
-#SBATCH --time=00:05:00
-#SBATCH --nodes=1
+#SBATCH --time=00:40:00
+#SBATCH --nodes=64
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-p0021348
-#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet_imagenet/ResNet/experiments/4g32b3e/%j/slurm_%j"
+#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet_imagenet/ResNet/experiments/256g32b4w100e/%j/slurm_%j"
 #SBATCH --exclusive
 
 module purge
@@ -29,16 +29,16 @@ else
 fi
 export LOCAL_BATCHSIZE=32
 export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
-export NUM_EPOCHS=10
+export NUM_EPOCHS=100
 export NUM_WORKERS=4
 export RANDOM_SEED=0
+export LR_SCHEDULER="multistep"
 
 export PYDIR=/hkfs/work/workspace/scratch/vm6493-resnet_imagenet/ResNet
 export EXP_BASE=${PYDIR}/experiments
-export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_EPOCHS}e
+export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
 mkdir ${EXP_TYPE}
 export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
-echo $RESDIR
 mkdir ${RESDIR}
 export DATA_PATH="/hkfs/home/dataset/datasets/imagenet-2012/original/imagenet-raw/ILSVRC/Data/CLS-LOC/"
 
@@ -49,17 +49,18 @@ cd ${RESDIR}
 
 # arguments for the training:
 # --use_subset: optional. if used, then only small amount of data set is used in training for faster debugging
-# --data_path: path to training, valid and 4g32b3e data
+# --data_path: path to training, valid data
 # --batchsize: global batch size
 # --num_epochs: number of epochs the model will be trained
 # --seed: to enable deterministic training
+# --lr_scheduler: [cosine, plateau, multistep], choose learning rate scheduler 
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
         perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py \
-        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --seed ${RANDOM_SEED} --use_subset"
+        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --lr_scheduler ${LR_SCHEDULER} --seed ${RANDOM_SEED}"
 
-export SHARED_WS=/hkfs/work/workspace/scratch/vm6493-resnet/experiments/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_EPOCHS}e
+export SHARED_WS=/hkfs/work/workspace/scratch/vm6493-resnet/experiments/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
 # Create the shared workspace
 mkdir -p ${SHARED_WS}
 # Copy the results to the shared workspace
