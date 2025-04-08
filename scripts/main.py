@@ -7,7 +7,7 @@ from perun import monitor
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau, CosineAnnealingLR, MultiStepLR
 
 from resnet.model import ResNet
 from resnet.train import train_model
@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--batchsize", default=1, type=int)
     parser.add_argument("--num_epochs", default=2, type=int)
     parser.add_argument("--num_workers", default=2, type=int)
+    parser.add_argument("--lr_scheduler", default="multistep", type=str, choices=["cosine", "plateau", "multistep"], help="Choose learning rate scheduler (cosine, plateau, multistep)")
     parser.add_argument('--seed', default=None, type=int, help='seed for initializing training. ')
     args = parser.parse_args()
 
@@ -64,6 +65,7 @@ def main():
         print(f"Max Epoch: {args.num_epochs}")
         print(f"Use Data Subset: {args.use_subset}")
         print(f"Number of Workers: {args.num_workers}")  
+        print(f"LR Scheduler: {args.lr_scheduler}")
         print(40*"-")
     if dist.is_initialized():
         print(f"Current GPU: {torch.cuda.current_device()}")
@@ -97,10 +99,10 @@ def main():
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.
     model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=1, weight_decay=0.0001)
+    reference_lr = 0.1
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=reference_lr, weight_decay=0.0001)
 
     # Define schedulers
-    reference_lr = .1
     warmup_epochs = 5
     if args.batchsize > 256:
         linear_scaling_factor = args.batchsize / 256  # lr factor to resolve large batch effect with batch size 256 as baseline: https://arxiv.org/pdf/1706.02677
@@ -109,9 +111,20 @@ def main():
     max_lr = reference_lr * linear_scaling_factor  # Final learning rate after warmup
 
     def warmup_fn(epoch):
-        return epoch / warmup_epochs * max_lr
+        if epoch == 0:
+            return 1
+        else:
+            return epoch+1 / warmup_epochs * max_lr
     warmup_scheduler = LambdaLR(optimizer, lr_lambda=warmup_fn)
-    lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+    if args.lr_scheduler == "plateau":
+        lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+    elif args.lr_scheduler == "cosine":
+        lr_scheduler = CosineAnnealingLR(optimizer, T_max=args.num_epochs)
+    elif args.lr_scheduler == "multistep":
+        milestones = [int(.3 * args.num_epochs), int(.6 * args.num_epochs), int(.8 * args.num_epochs)]
+        lr_scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
+    else:
+        raise ValueError(f"Unknown lr scheduler: {args.lr_scheduler}")
 
     # Train model.
     valid_loss_history, train_acc_history, valid_acc_history, lr_history, time_history = train_model(
