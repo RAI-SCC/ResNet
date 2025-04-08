@@ -14,3 +14,4 @@ experiments/
 *.log
 
 scripts/results.ipynb
+ResNet/submission_scripts/submit_horeka_test.sh
