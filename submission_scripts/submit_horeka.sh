@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name=256g32b4w100e
+#SBATCH --job-name=256g256b4w100e
 #SBATCH --partition=accelerated
-#SBATCH --time=00:40:00
+#SBATCH --time=04:00:00
 #SBATCH --nodes=64
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-p0021348
-#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet_imagenet/ResNet/experiments/256g32b4w100e/%j/slurm_%j"
+#SBATCH --output="/hkfs/work/workspace/scratch/vm6493-resnet_imagenet/ResNet/experiments/256g256b4w100e/%j/slurm_%j"
 #SBATCH --exclusive
 
 module purge
@@ -32,7 +32,7 @@ export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
 export NUM_EPOCHS=100
 export NUM_WORKERS=4
 export RANDOM_SEED=0
-export LR_SCHEDULER="multistep"
+export LR_SCHEDULER="plateau"
 
 export PYDIR=/hkfs/work/workspace/scratch/vm6493-resnet_imagenet/ResNet
 export EXP_BASE=${PYDIR}/experiments
