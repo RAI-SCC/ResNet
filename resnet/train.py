@@ -203,10 +203,14 @@ def train_model(
                       f'| Time: {time_elapsed :.2f} min')
             
             # Scheduler Step
-            if epoch < warmup_epochs:
+            if (epoch+1) < warmup_epochs:
                 warmup_scheduler.step()
             else:
-                lr_scheduler.step()
+                if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    lr_scheduler.step(valid_loss)
+                else:
+                    lr_scheduler.step()
+
 
                 torch.save({'epoch': epoch, 'model_state': model.state_dict(),
                             'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
