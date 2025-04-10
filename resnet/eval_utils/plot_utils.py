@@ -27,13 +27,18 @@ def plot_scaling_time(result_path, name, gpus, times, total_energies):
     fs = 7
     ms = 3
     lw = 1
-    fig, ax1 = plt.subplots(figsize=(3.5, 2.5))
+    log_gpu = []
+    for i in gpus:
+        val = np.log2(int(i))
+        label = f"2$^{int(val)}$"
+        log_gpu.append(label)
+    fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
     name = name + "_with_times"
     target_path = Path(result_path, name)
     ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color='C0', label="Energy", lw=lw)
-    ax1.set_xlabel("GPUs", fontsize=fs)
+    ax1.set_xlabel("Number of GPUs", fontsize=fs)
     ax1.set_xticks(range(len(gpus)))
-    ax1.set_xticklabels(gpus, fontsize=fs)
+    ax1.set_xticklabels(log_gpu, fontsize=fs)
     ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
@@ -62,13 +67,18 @@ def plot_scaling_top1(result_path, name, gpus, top1, total_energies):
     fs = 7
     ms = 3
     lw = 1
-    fig, ax1 = plt.subplots(figsize=(3.5, 2.5))
+    log_gpu = []
+    for i in gpus:
+        val = np.log2(int(i))
+        label = f"2$^{int(val)}$"
+        log_gpu.append(label)
+    fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
     name = name + "_with_top1"
     target_path = Path(result_path, name)
     ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color='C0', label="Energy", lw=lw)
-    ax1.set_xlabel("GPUs", fontsize=fs)
+    ax1.set_xlabel("Number of GPUs", fontsize=fs)
     ax1.set_xticks(range(len(gpus)))
-    ax1.set_xticklabels(gpus, fontsize=fs)
+    ax1.set_xticklabels(log_gpu, fontsize=fs)
     ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
@@ -78,7 +88,7 @@ def plot_scaling_top1(result_path, name, gpus, top1, total_energies):
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
 
 
-def plot_top1(result_path, scaling_list, name):
+def plot_top1(result_path, scaling_list, name, key):
     """
     Plot the Top1 errors versus epochs.
     Parameters
@@ -89,9 +99,13 @@ def plot_top1(result_path, scaling_list, name):
         Names of specific folders within result path. Saved as strings.
     name : str
         Name for the plot to be saves.
+    key : str
+        Plot for strong scaling list or weak scaling list.
     """
     fs = 7
     lw = 1
+    exp_list = [2**n for n in range(21)]
+    k_list = [str(n) for n in exp_list[0:10]] + [str(2**n)+"k" for n in range(12)]
     fig, ax1 = plt.subplots(figsize=(3.5, 2.5))
     name = name + "_top1error"
     target_path = Path(result_path, name)
@@ -109,7 +123,15 @@ def plot_top1(result_path, scaling_list, name):
         top1_valid_acc = torch.load(path)
         top1_valid_error = [100 - val for val in top1_valid_acc]
 
-        ax1.plot(range(len(top1_valid_error)), top1_valid_error, linestyle='-', label=f"GPUs: {num_gpus}, gbs: {gbs}, lbs: {lbs}", lw=lw)
+        if key == "ws":
+            for i, val in enumerate(exp_list):
+                if gbs == val:
+                    label = f"n: {num_gpus}, g: {k_list[i]}"
+        elif key == "ss":
+            label = f"n: {num_gpus}, l: {lbs}"
+        else:
+            label = f"GPUs: {num_gpus}, gbs: {gbs}, lbs: {lbs}"
+        ax1.plot(range(len(top1_valid_error)), top1_valid_error, linestyle='-', label=label, lw=lw)
 
     ax1.set_xlabel("Epochs", fontsize=fs)
     ax1.set_xlim(0, len(top1_valid_error)-1)
@@ -119,7 +141,7 @@ def plot_top1(result_path, scaling_list, name):
     ax1.set_xticklabels([str(int(tick+1)) for tick in xticks], fontsize=fs)
     ax1.set_ylabel("Top1 error / %", fontsize=fs)
     ax1.tick_params(axis='y', labelsize=fs)
-    ax1.legend(loc='upper right', fontsize=fs)
+    ax1.legend(loc='upper right', fontsize=fs)#, handlelength=1.0)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
 
 
@@ -141,7 +163,6 @@ def plot_scaling(result_path, scaling_list, name):
     top1_valid_errors = []
 
     for folder in scaling_list:
-        print(folder)
         # Get setup
         num_gpus = int(folder.split("g")[0])
         lbs = int((folder.split("b")[0]).split("g")[-1])
