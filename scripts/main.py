@@ -114,7 +114,7 @@ def main():
         if epoch == 0:
             return 1
         else:
-            return epoch+1 / warmup_epochs * max_lr
+            return (epoch+1) / warmup_epochs * max_lr * 1 / reference_lr
     warmup_scheduler = LambdaLR(optimizer, lr_lambda=warmup_fn)
     if args.lr_scheduler == "plateau":
         lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
