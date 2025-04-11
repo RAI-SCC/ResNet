@@ -27,7 +27,7 @@ if [ -n "$SLURM_NPROCS" ]; then
 else
     export NUM_GPUS=0    
 fi
-export LOCAL_BATCHSIZE=32
+export LOCAL_BATCHSIZE=256
 export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
 export NUM_EPOCHS=100
 export NUM_WORKERS=4
