@@ -117,7 +117,7 @@ def main():
             return (epoch+1) / warmup_epochs * max_lr * 1 / reference_lr
     warmup_scheduler = LambdaLR(optimizer, lr_lambda=warmup_fn)
     if args.lr_scheduler == "plateau":
-        lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+        lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     elif args.lr_scheduler == "cosine":
         lr_scheduler = CosineAnnealingLR(optimizer, T_max=args.num_epochs)
     elif args.lr_scheduler == "multistep":
