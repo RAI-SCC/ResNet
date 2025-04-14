@@ -4,9 +4,25 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from cycler import cycler
 
 from resnet.eval_utils.read_utils import get_perun_data
 
+colors = {
+    "green": "#009682",
+    "blue": "#4664aa",
+    "red": "#a22223",
+    "orange": "#df9b1b",
+    "brown": "#a7822e",
+    "purple": "#a3107c",
+    "cyan": "#23a1e0",
+    "yellow": "#fce500",
+    "maygreen": "#8cb63c",
+    "white": "#ffffff",
+    "black": "#000000",
+}
+
+plt.rcParams['axes.prop_cycle'] = cycler(color=list(colors.values()))
 
 def plot_scaling_time(result_path, name, gpus, times, total_energies):
     """
@@ -35,14 +51,14 @@ def plot_scaling_time(result_path, name, gpus, times, total_energies):
     fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
     name = name + "_with_times"
     target_path = Path(result_path, name)
-    ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color='C0', label="Energy", lw=lw)
+    ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color="C0", label="Energy", lw=lw)
     ax1.set_xlabel("Number of GPUs", fontsize=fs)
     ax1.set_xticks(range(len(gpus)))
     ax1.set_xticklabels(log_gpu, fontsize=fs)
     ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
-    ax2.plot(range(len(gpus)), times, marker='o', ms=ms, linestyle='-', color='C1', label="Time", lw=lw)
+    ax2.plot(range(len(gpus)), times, marker='o', ms=ms, linestyle='-', color="C1", label="Time", lw=lw)
     ax2.set_ylabel("Time / min", fontsize=fs, color="C1")
     ax2.tick_params(axis='y', labelsize=fs)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
@@ -75,14 +91,14 @@ def plot_scaling_top1(result_path, name, gpus, top1, total_energies):
     fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
     name = name + "_with_top1"
     target_path = Path(result_path, name)
-    ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color='C0', label="Energy", lw=lw)
+    ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color="C0", label="Energy", lw=lw)
     ax1.set_xlabel("Number of GPUs", fontsize=fs)
     ax1.set_xticks(range(len(gpus)))
     ax1.set_xticklabels(log_gpu, fontsize=fs)
     ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
-    ax2.plot(range(len(gpus)), top1, marker='o', ms=ms, linestyle='-', color='C1', label="Top1 Error", lw=lw)
+    ax2.plot(range(len(gpus)), top1, marker='o', ms=ms, linestyle='-', color="C1", label="Top1 Error", lw=lw)
     ax2.set_ylabel("Top1 Error / %", fontsize=fs, color="C1")
     ax2.tick_params(axis='y', labelsize=fs)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
@@ -111,10 +127,12 @@ def plot_top1(result_path, scaling_list, name, key):
     target_path = Path(result_path, name)
     gpus = []
     top1_valid_error = []
+
     for folder in scaling_list:
+        hyperparams = str(folder).split("/")[0]
         # Get setup
-        num_gpus = int(folder.split("g")[0])
-        lbs = int((folder.split("b")[0]).split("g")[-1])
+        num_gpus = int(hyperparams.split("g")[0])
+        lbs = int((hyperparams.split("b")[0]).split("g")[-1])
         gbs = lbs * num_gpus
         gpus.append(num_gpus)
 
@@ -163,9 +181,10 @@ def plot_scaling(result_path, scaling_list, name):
     top1_valid_errors = []
 
     for folder in scaling_list:
+        hyperparams = str(folder).split("/")[0]
         # Get setup
-        num_gpus = int(folder.split("g")[0])
-        lbs = int((folder.split("b")[0]).split("g")[-1])
+        num_gpus = int(hyperparams.split("g")[0])
+        lbs = int((hyperparams.split("b")[0]).split("g")[-1])
         gbs = lbs * num_gpus
         gpus.append(num_gpus)
 
