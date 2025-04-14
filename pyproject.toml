@@ -27,7 +27,6 @@ dependencies = [
     "mpi4py>=3.1",
     "perun[mpi,nvidia,rocm]>=0.8.9",
     "matplotlib",
-    "kitcolors (>=1.7.0,<2.0.0)"
 ]
 
 [tool.ruff]
