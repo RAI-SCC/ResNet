@@ -194,7 +194,6 @@ def train_model(
                 print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
                       f'| Validation Loss: {valid_loss:.4f} '
                       f'| Training Loss: {train_loss:.4f} '
-                      f'| Time: {time_elapsed :.2f} min '
                       f'| Top1-Train: {top1_acc_train :.2f}% '
                       f'| Top1-Validation: {top1_acc_valid :.2f}% '
                       f'| Top5-Train: {top5_acc_train :.2f}% '
