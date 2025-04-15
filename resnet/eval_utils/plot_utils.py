@@ -48,18 +48,18 @@ def plot_scaling_time(result_path, name, gpus, times, total_energies):
         val = np.log2(int(i))
         label = f"2$^{int(val)}$"
         log_gpu.append(label)
-    fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
+    fig, ax1 = plt.subplots(figsize=(3.5, 1.8))
     name = name + "_with_times"
     target_path = Path(result_path, name)
     ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color="C0", label="Energy", lw=lw)
     ax1.set_xlabel("Number of GPUs", fontsize=fs)
     ax1.set_xticks(range(len(gpus)))
-    ax1.set_xticklabels(log_gpu, fontsize=fs)
-    ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
+    ax1.set_xticklabels(gpus, fontsize=fs)
+    ax1.set_ylabel("Energy [kWh]", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
     ax2.plot(range(len(gpus)), times, marker='o', ms=ms, linestyle='-', color="C1", label="Time", lw=lw)
-    ax2.set_ylabel("Time / min", fontsize=fs, color="C1")
+    ax2.set_ylabel("Time [h]", fontsize=fs, color="C1")
     ax2.tick_params(axis='y', labelsize=fs)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
 
@@ -88,18 +88,18 @@ def plot_scaling_top1(result_path, name, gpus, top1, total_energies):
         val = np.log2(int(i))
         label = f"2$^{int(val)}$"
         log_gpu.append(label)
-    fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
+    fig, ax1 = plt.subplots(figsize=(3.5, 1.8))
     name = name + "_with_top1"
     target_path = Path(result_path, name)
     ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color="C0", label="Energy", lw=lw)
     ax1.set_xlabel("Number of GPUs", fontsize=fs)
     ax1.set_xticks(range(len(gpus)))
-    ax1.set_xticklabels(log_gpu, fontsize=fs)
-    ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
+    ax1.set_xticklabels(gpus, fontsize=fs)
+    ax1.set_ylabel("Energy [kWh]", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
     ax2.plot(range(len(gpus)), top1, marker='o', ms=ms, linestyle='-', color="C1", label="Top1 Error", lw=lw)
-    ax2.set_ylabel("Top1 Error / %", fontsize=fs, color="C1")
+    ax2.set_ylabel("Top1 Error [%]", fontsize=fs, color="C1")
     ax2.tick_params(axis='y', labelsize=fs)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
 
@@ -207,7 +207,7 @@ def plot_scaling(result_path, scaling_list, name):
         cpu_total = np.array(cpu).sum()
         ram_total = np.array(ram).sum()
         total_energy = gpu_total + cpu_total + ram_total
-        total_energies.append(total_energy)
+        total_energies.append(total_energy / 3.6)
         # Get perun last time:
         time_list = []
         for key, _ in perun_data.items():
@@ -217,7 +217,7 @@ def plot_scaling(result_path, scaling_list, name):
                 time_list.append(perun_data[key]["cpu"][num]["timesteps"][-1])
             for num, _ in perun_data[key]["ram"].items():
                 time_list.append(perun_data[key]["ram"][num]["timesteps"][-1])
-        total_time = (max(time_list)) / 60
+        total_time = (max(time_list)) / 3600
         times.append(total_time)
 
         # Get Top1
