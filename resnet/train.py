@@ -10,9 +10,9 @@ def warmup_goyal_fn(epoch, batchsize, warmup_epochs, reference_lr):
     max_lr = reference_lr * linear_scaling_factor
     diff_lr = max_lr - reference_lr
     if epoch == 0:
-        lr = reference_lr
+        lr = 1
     else:
-        lr = reference_lr + (epoch/(warmup_epochs-1)) * diff_lr
+        lr = (reference_lr + (epoch/(warmup_epochs)) * diff_lr) / reference_lr
     return lr
 
 
@@ -213,7 +213,7 @@ def train_model(
                       f'| Time: {time_elapsed :.2f} min')
             
             # Scheduler Step
-            if (epoch+1) < warmup_epochs:
+            if (epoch) < warmup_epochs:
                 warmup_scheduler.step()
             else:
                 if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
