@@ -2,6 +2,7 @@ import os
 import time
 import random
 import argparse
+import socket
 
 from perun import monitor
 import torch
@@ -10,7 +11,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau, CosineAnnealingLR, MultiStepLR
 
 from resnet.model import ResNet
-from resnet.train import train_model
+from resnet.train import train_model, warmup_goyal_fn
 from resnet.dataloader import dataloader
 
 
@@ -25,7 +26,7 @@ def main():
     parser.add_argument("--batchsize", default=1, type=int)
     parser.add_argument("--num_epochs", default=2, type=int)
     parser.add_argument("--num_workers", default=2, type=int)
-    parser.add_argument("--lr_scheduler", default="multistep", type=str, choices=["cosine", "plateau", "multistep"], help="Choose learning rate scheduler (cosine, plateau, multistep)")
+    parser.add_argument("--lr_scheduler", default="plateau", type=str, choices=["cosine", "plateau", "multistep"], help="Choose learning rate scheduler (cosine, plateau, multistep)")
     parser.add_argument('--seed', default=None, type=int, help='seed for initializing training. ')
     args = parser.parse_args()
 
@@ -42,7 +43,7 @@ def main():
     # Distributed set up.
     world_size = int(os.getenv("SLURM_NPROCS"))  # Get overall number of processes.
     rank = int(os.getenv("SLURM_PROCID"))  # Get individual process ID.
-    slurm_job_gpus = os.getenv("SLURM_JOB_GPUS")  # Get GPU IDs.
+    hostname = socket.gethostname()
     slurm_localid = int(os.getenv("SLURM_LOCALID"))  # Get local process ID.
     gpus_per_node = torch.cuda.device_count()
     gpu = rank % gpus_per_node
@@ -58,27 +59,25 @@ def main():
     if rank == 0:
         if args.seed is not None:
             print(f"Deterministic training is enabled")
-        print(f"CUDA Available: {torch.cuda.is_available()}")
-        print(f"Number of GPUs: {world_size}")
-        print(f"Global Batch Size: {args.batchsize}")
-        print(f"Local Batch Size: {int(args.batchsize / world_size)}")
-        print(f"Max Epoch: {args.num_epochs}")
-        print(f"Use Data Subset: {args.use_subset}")
-        print(f"Number of Workers: {args.num_workers}")  
-        print(f"LR Scheduler: {args.lr_scheduler}")
-        print(40*"-")
+        print(f"{30*'-'} \n"
+              f"CUDA Available: {torch.cuda.is_available()} \n"
+              f"Number of GPUs: {world_size} \n"
+              f"Global Batch Size: {args.batchsize} \n"
+              f"Local Batch Size: {int(args.batchsize / world_size)} \n"
+              f"Max Epoch: {args.num_epochs} \n"
+              f"Use Data Subset: {args.use_subset} \n"
+              f"Number of Workers: {args.num_workers} \n"
+              f"LR Scheduler: {args.lr_scheduler} \n"
+              f"{30*'-'}")
     if dist.is_initialized():
-        print(f"Current GPU: {torch.cuda.current_device()}")
-        print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
-        print(f"Slurm rank / world size: {rank} / {world_size}")
-        print(f"Torch rank / world size: {torch.distributed.get_rank()} / {torch.distributed.get_world_size()}")
-        print(40*"-")
-    else: 
+        print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())} "
+              f"| Hostname: {hostname} "
+              f"| Slurm rank / world size: {rank} / {world_size} ")
+    else:
         print(f"CUDA Available: {torch.cuda.is_available()}")
         print(f"Batch Size: {args.batchsize}")
         print(f"Max Epoch: {args.num_epochs}")
         print(f"Use Data Subset: {args.use_subset}")
-        print(40*"-")
 
     # Get distributed dataloaders on all ranks.
     if args.seed is not None:
@@ -102,20 +101,17 @@ def main():
     reference_lr = 0.1
     optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=reference_lr, weight_decay=0.0001)
 
-    # Define schedulers
+    # Define warmup https://arxiv.org/pdf/1706.02677
     warmup_epochs = 5
-    if args.batchsize > 256:
-        linear_scaling_factor = args.batchsize / 256  # lr factor to resolve large batch effect with batch size 256 as baseline: https://arxiv.org/pdf/1706.02677
-    else: 
-        linear_scaling_factor = 1
-    max_lr = reference_lr * linear_scaling_factor  # Final learning rate after warmup
+    warmup_scheduler = LambdaLR(optimizer,
+                                lr_lambda=lambda epoch: warmup_goyal_fn(epoch,
+                                                                        batchsize=args.batchsize,
+                                                                        warmup_epochs= warmup_epochs,
+                                                                        reference_lr=reference_lr
+                                                                        )
+                                )
 
-    def warmup_fn(epoch):
-        if epoch == 0:
-            return 1
-        else:
-            return (epoch+1) / warmup_epochs * max_lr * 1 / reference_lr
-    warmup_scheduler = LambdaLR(optimizer, lr_lambda=warmup_fn)
+    # Define schedulers
     if args.lr_scheduler == "plateau":
         lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     elif args.lr_scheduler == "cosine":

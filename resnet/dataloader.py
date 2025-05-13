@@ -5,6 +5,15 @@ import numpy as np
 import random
 
 
+def worker_init_seed_fn(worker_id):
+    """
+    Function to set random seed for workers.
+    """
+    worker_seed = torch.initial_seed() % 2 ** 32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 @monitor()
 def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = False, path_to_data: str = "./", seed_training: bool = False):
     """
@@ -70,13 +79,11 @@ def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = Fa
         drop_last=True,
     )
 
+    # Set random seeds
     generator = None
     worker_init_fn = None
     if seed_training is True:
-        def worker_init_fn(worker_id):
-            worker_seed = torch.initial_seed() % 2**32
-            np.random.seed(worker_seed)
-            random.seed(worker_seed)
+        worker_init_fn = worker_init_seed_fn
         generator = torch.Generator()
         generator.manual_seed(0)
     

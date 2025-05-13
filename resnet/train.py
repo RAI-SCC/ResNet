@@ -4,7 +4,18 @@ import torch
 from perun import monitor
 
 
-@monitor()
+def warmup_goyal_fn(epoch, batchsize, warmup_epochs, reference_lr):
+    # Define warmup https://arxiv.org/pdf/1706.02677
+    linear_scaling_factor = batchsize / 256
+    max_lr = reference_lr * linear_scaling_factor
+    diff_lr = max_lr - reference_lr
+    if epoch == 0:
+        lr = reference_lr
+    else:
+        lr = reference_lr + (epoch/(warmup_epochs-1)) * diff_lr
+    return lr
+
+
 def compute_accuracy(model, data_loader):
     """
     Compute accuracy of model predictions on given labeled data.
@@ -194,7 +205,6 @@ def train_model(
                 print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
                       f'| Validation Loss: {valid_loss:.4f} '
                       f'| Training Loss: {train_loss:.4f} '
-                      f'| Time: {time_elapsed :.2f} min '
                       f'| Top1-Train: {top1_acc_train :.2f}% '
                       f'| Top1-Validation: {top1_acc_valid :.2f}% '
                       f'| Top5-Train: {top5_acc_train :.2f}% '
@@ -211,10 +221,8 @@ def train_model(
                 else:
                     lr_scheduler.step()
 
-
                 torch.save({'epoch': epoch, 'model_state': model.state_dict(),
                             'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
-            
 
     if rank == 0:
         torch.save(train_loss_history, f'train_loss.pt')
