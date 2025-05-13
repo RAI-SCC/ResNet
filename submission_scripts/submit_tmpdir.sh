@@ -1,0 +1,72 @@
+#!/bin/bash
+#SBATCH --job-name=resnet
+#SBATCH --partition=accelerated
+#SBATCH --time=04:00:00
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=4
+#SBATCH --gpus-per-node=4
+#SBATCH --account=hk-project-p0021348
+#SBATCH --output="/hkfs/work/workspace/scratch/er2341-resnet50/ResNet/experiments/256g256b4w100e/%j/slurm_%j"
+#SBATCH --exclusive
+
+# Create input data on TMPDIR:
+date
+srun -N $SLURM_NNODES --ntasks-per-node=1 mkdir $TMPDIR/imagenet-2012
+srun -N $SLURM_NNODES --ntasks-per-node=1 tar -C $TMPDIR/imagenet-2012 -xf /hkfs/work/workspace/scratch/xy6660-ImageNet/imagenet-2012.tar
+date
+
+# Load modules
+module purge
+module load devel/cuda/12.2
+ml load compiler/intel/2023.1.0
+ml load mpi/openmpi/4.1
+
+# Set master port
+export MASTER_PORT=12340
+master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+export MASTER_ADDR=$master_addr
+echo "MASTER_ADDR="$MASTER_ADDR
+
+# Pyvenv
+source /hkfs/home/project/hk-project-p0021348/xy6660/ResNet14042025/pyvenv311/bin/activate
+
+if [ -n "$SLURM_NPROCS" ]; then
+    export NUM_GPUS=$SLURM_NPROCS
+else
+    export NUM_GPUS=0
+fi
+
+# Hyperparameters
+export LOCAL_BATCHSIZE=256
+export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
+export NUM_EPOCHS=100
+export NUM_WORKERS=4
+export RANDOM_SEED=0
+export LR_SCHEDULER="plateau"
+
+# Set paths
+export PYDIR=/hkfs/home/project/hk-project-p0021348/xy6660/ResNet14042025/ResNet
+export EXP_BASE=/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments
+export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
+mkdir ${EXP_TYPE}
+export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
+mkdir ${RESDIR}
+export DATA_PATH="$TMPDIR/imagenet-2012"
+
+PERUN_OUT="$RESDIR/perun"
+PERUN_APP_NAME="perun"
+
+cd ${RESDIR}
+
+# arguments for the training:
+# --use_subset: optional. if used, then only small amount of data set is used in training for faster debugging
+# --data_path: path to training, valid data
+# --batchsize: global batch size
+# --num_epochs: number of epochs the model will be trained
+# --seed: to enable deterministic training
+# --lr_scheduler: [cosine, plateau, multistep], choose learning rate scheduler
+srun -u --mpi=pmi2 bash -c "
+        PERUN_DATA_OUT=$PERUN_OUT \
+        PERUN_APP_NAME=$PERUN_APP_NAME \
+        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py \
+        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --lr_scheduler ${LR_SCHEDULER} --seed ${RANDOM_SEED} --use_subset"
