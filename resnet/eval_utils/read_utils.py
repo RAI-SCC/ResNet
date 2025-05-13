@@ -104,6 +104,46 @@ def adjust_energy(energy: np.array = None, max_val: float = None) -> np.array:
     return np.array(energy_adjusted)
 
 
+def get_utilization(
+    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+) -> [np.array, np.array]:
+    """
+    Get gpu power data from corresponding hdf5 file provided by perun.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    h5_base_path: str
+        Internal path within hdf5 file.
+    num : int
+        Index of corresponding core
+    key : str
+        gou, cpu, or ram
+
+    Returns
+    _______
+    data : dict
+        Contains the gpu power data saved as np.arrays.
+    """
+    if key == "gpu":
+        #h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/values"
+        #h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/timesteps"
+        h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/values"
+        h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/timesteps"
+    if key == "cpu":
+        h5_val_path = f"{h5_base_path}CPU_USAGE/raw_data/values"
+        h5_time_path = f"{h5_base_path}CPU_USAGE/raw_data//timesteps"
+    if key == "ram":
+        h5_val_path = f"{h5_base_path}RAM_USAGE/raw_data/values"
+        h5_time_path = f"{h5_base_path}RAM_USAGE/raw_data/timesteps"
+    vals = np.array(h5val[h5_val_path])
+    mag = float(h5val[h5_val_path].attrs["mag"])
+    power = vals* mag
+    timesteps = np.array(h5val[h5_time_path])
+    return power, timesteps
+
+
 def get_power(
     h5val=None, h5_base_path: str = None, num: int = None, key: str = None
 ) -> [np.array, np.array]:
@@ -239,6 +279,7 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
         if key == "gpu":
             mem, _ = get_gpu_mem(h5val, h5_path, num)
             data[num]['memory'] = mem * 1024 ** 3  # B to GB
+        data[num]["util"], _ = get_utilization(h5val, h5_path, num, key)
         data[num]["power"] = power
         data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
         data[num]["timesteps"] = timesteps

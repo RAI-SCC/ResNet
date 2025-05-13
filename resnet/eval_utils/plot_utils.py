@@ -8,6 +8,19 @@ import torch
 from resnet.eval_utils.read_utils import get_perun_data
 
 
+def plot_single_device(power, time, label):
+    fs = 7
+    lw = 0.5
+    ms = 0.5
+    fig, ax1 = plt.subplots(figsize=(7, 5))
+    ax1.plot(time, power, linestyle='', markersize=ms, marker=".", label=label, lw=lw)
+    ax1.set_xlabel("Epochs", fontsize=fs)
+    ax1.grid(True, which='both', linestyle='--', linewidth=lw, color='gray')
+    ax1.set_ylabel(label, fontsize=fs)
+    ax1.tick_params(axis='y', labelsize=fs)
+    plt.show()
+
+
 def plot_scaling_time(result_path, name, gpus, times, total_energies):
     """
     Plots strong and weak scaling with total run times and consumed energy.
