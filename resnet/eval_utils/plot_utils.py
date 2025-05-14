@@ -208,6 +208,7 @@ def plot_scaling(result_path, scaling_list, name):
         ram_total = np.array(ram).sum()
         total_energy = gpu_total + cpu_total + ram_total
         total_energies.append(total_energy / 3.6)
+        print(f"gpu:{num_gpus} lbs:{lbs} kWh:{total_energy /3.6:.2f}")
         # Get perun last time:
         time_list = []
         for key, _ in perun_data.items():
@@ -224,6 +225,7 @@ def plot_scaling(result_path, scaling_list, name):
         path = Path(result_path, folder, "valid_top1.pt")
         top1_valid_acc = torch.load(path)
         top1_valid_errors.append(100 - top1_valid_acc[-1])
+        print(f"gpu: {num_gpus}, lbs: {lbs} top1 error: {100 - top1_valid_acc[-1]}")
 
     # Plot it
     plot_scaling_time(result_path, name, gpus, times, total_energies)
