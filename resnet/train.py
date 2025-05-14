@@ -199,7 +199,9 @@ def train_model(
                       f'| Top5-Train: {top5_acc_train :.2f}% '
                       f'| Top5-Validation: {top5_acc_valid :.2f}% '
                       f'| LR: {optimizer.state_dict()["param_groups"][0]["lr"] :.6f} '
-                      f'| Time: {time_elapsed :.2f} min')
+                      f'| Time: {time_elapsed :.2f} min'
+                      f'| Mean Time: {time_history[epoch]/(epoch + 1) :.4f} min'
+                )
             
             # Scheduler Step
             if epoch < warmup_epochs:
