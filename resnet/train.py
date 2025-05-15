@@ -12,7 +12,7 @@ def warmup_goyal_fn(epoch, batchsize, warmup_epochs, reference_lr):
     if epoch == 0:
         lr = 1
     else:
-        lr = (reference_lr + (epoch/(warmup_epochs)) * diff_lr) / reference_lr
+        lr = (reference_lr + (epoch/warmup_epochs) * diff_lr) / reference_lr
     return lr
 
 
@@ -213,16 +213,13 @@ def train_model(
                       f'| Time: {time_elapsed :.2f} min')
             
             # Scheduler Step
-            if (epoch) < warmup_epochs:
+            if epoch < warmup_epochs:
                 warmup_scheduler.step()
             else:
                 if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     lr_scheduler.step(valid_loss)
                 else:
                     lr_scheduler.step()
-
-                torch.save({'epoch': epoch, 'model_state': model.state_dict(),
-                            'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
 
     if rank == 0:
         torch.save(train_loss_history, f'train_loss.pt')
@@ -233,5 +230,7 @@ def train_model(
         torch.save(top5_acc_valid_history, f'valid_top5.pt')
         torch.save(time_history, f'time.pt')
         torch.save(lr_history, f'lr.pt')
+        torch.save({'epoch': epoch, 'model_state': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
 
     return valid_loss_history, top1_acc_train_history, top1_acc_valid_history, lr_history, time_history
