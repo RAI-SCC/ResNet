@@ -1,8 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=resnet
-#SBATCH --partition=accelerated
-#SBATCH --time=04:00:00
-#SBATCH --nodes=4
+#SBATCH --partition=dev_accelerated
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-p0021348
@@ -13,6 +11,7 @@
 date
 srun -N $SLURM_NNODES --ntasks-per-node=1 mkdir $TMPDIR/imagenet-2012
 srun -N $SLURM_NNODES --ntasks-per-node=1 tar -C $TMPDIR/imagenet-2012 -xf /hkfs/work/workspace/scratch/xy6660-ImageNet/imagenet-2012.tar
+ls $TMPDIR/imagenet-2012/CLS-LOC
 date
 
 # Load modules
@@ -28,7 +27,7 @@ export MASTER_ADDR=$master_addr
 echo "MASTER_ADDR="$MASTER_ADDR
 
 # Pyvenv
-source /hkfs/home/project/hk-project-p0021348/xy6660/ResNet14042025/pyvenv311/bin/activate
+source /hkfs/work/workspace/scratch/xy6660-ResImageNet/pyvenv3.11/bin/activate
 
 if [ -n "$SLURM_NPROCS" ]; then
     export NUM_GPUS=$SLURM_NPROCS
@@ -37,7 +36,7 @@ else
 fi
 
 # Hyperparameters
-export LOCAL_BATCHSIZE=256
+export LOCAL_BATCHSIZE=$LBS
 export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
 export NUM_EPOCHS=100
 export NUM_WORKERS=4
@@ -45,13 +44,13 @@ export RANDOM_SEED=0
 export LR_SCHEDULER="plateau"
 
 # Set paths
-export PYDIR=/hkfs/home/project/hk-project-p0021348/xy6660/ResNet14042025/ResNet
+export PYDIR=/hkfs/work/workspace/scratch/xy6660-ResImageNet/ResNet
 export EXP_BASE=/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments
 export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
-mkdir ${EXP_TYPE}
+mkdir -p ${EXP_TYPE}
 export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
 mkdir ${RESDIR}
-export DATA_PATH="$TMPDIR/imagenet-2012"
+export DATA_PATH="$TMPDIR/imagenet-2012/CLS-LOC"
 
 PERUN_OUT="$RESDIR/perun"
 PERUN_APP_NAME="perun"
