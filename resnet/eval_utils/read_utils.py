@@ -177,7 +177,7 @@ def get_power(
         h5_time_path = f"{h5_base_path}cpu_{num}_package-{num}/raw_data/timesteps"
     power = np.array(h5val[h5_power_path])
     mag = float(h5val[h5_power_path].attrs["mag"])
-    power = power* mag
+    power = power*mag
     timesteps = np.array(h5val[h5_time_path])
     return power, timesteps
 

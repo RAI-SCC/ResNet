@@ -1,11 +1,26 @@
 from pathlib import Path
 
-import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from cycler import cycler
 
-from resnet.eval_utils.read_utils import get_perun_data
+
+kitcolors = {
+    "brown": (167 / 255, 130 / 255, 46 / 255),
+    "purple": (163 / 255, 16 / 255, 124 / 255),
+    "cyan": (35 / 255, 161 / 255, 224 / 255),
+    "peagreen": (140 / 255, 182 / 255, 60 / 255),
+    "yellow": (252 / 255, 229 / 255, 0 / 255),
+    "orange": (223 / 255, 155 / 255, 27 / 255),
+    "red": (162 / 255, 34 / 255, 35 / 255),
+    "green": (0 / 255, 150 / 255, 130 / 255),
+    "blue": (70 / 255, 100 / 255, 170 / 255),
+    "white": (0 / 255, 150 / 255, 130 / 255),
+    "black100": (0 / 255, 0 / 255, 0 / 255),
+    "black70": (64 / 255, 64 / 255, 64 / 255),
+}
+plt.rcParams['axes.prop_cycle'] = cycler(color=list(kitcolors.values()))
 
 
 def plot_single_device(power, time, label):
@@ -21,82 +36,96 @@ def plot_single_device(power, time, label):
     plt.show()
 
 
-def plot_scaling_time(result_path, name, gpus, times, total_energies):
+def plot_scaling(result_path, data, scaling_list, name):
     """
     Plots strong and weak scaling with total run times and consumed energy.
     Parameters
     __________
     result_path : Path
-        Path to results
+        Path to results.
+    data : dict
+        Results saved in nested dictionary.
+    scaling_list : dict
+        Labels saved in dict.
     name : str
         Name for the plot to be saves.
-    gpus : list
-        Number of gpus for each experiment
-    time : list
-        Total run time for each experiment
-    total_energies : list
-        Consumed energy for each experiment
     """
     fs = 7
-    ms = 3
+    ms = 2
     lw = 1
-    log_gpu = []
-    for i in gpus:
-        val = np.log2(int(i))
-        label = f"2$^{int(val)}$"
-        log_gpu.append(label)
+    elw = 1
+    y1_vals = []
+    y2_vals = []
+    y1_rmse = []
+    y2_rmse = []
+    num_gpus = []
+    for folder in scaling_list:
+        y1_vals.append(data[folder]["mean"]["perun_energy"])
+        y2_vals.append(data[folder]["mean"]["perun_time"])
+        y1_rmse.append(data[folder]["rmse"]["perun_energy"])
+        y2_rmse.append(data[folder]["rmse"]["perun_time"])
+        num_gpus.append(data[folder]["gpus"])
     fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
-    name = name + "_with_times"
+    name = name + "_perun_data"
     target_path = Path(result_path, name)
-    ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color='C0', label="Energy", lw=lw)
+    ax1.errorbar(range(len(num_gpus)), y1_vals, yerr=y1_rmse, marker='o', ms=ms, linestyle='-', color="C0",
+                 label="Energy", lw=lw, capsize=2, elinewidth=elw)
     ax1.set_xlabel("Number of GPUs", fontsize=fs)
-    ax1.set_xticks(range(len(gpus)))
-    ax1.set_xticklabels(log_gpu, fontsize=fs)
-    ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
+    ax1.set_xticks(range(len(num_gpus)))
+    ax1.set_xticklabels(num_gpus, fontsize=fs)
+    ax1.set_ylabel("Energy [kWh]", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
-    ax2.plot(range(len(gpus)), times, marker='o', ms=ms, linestyle='-', color='C1', label="Time", lw=lw)
-    ax2.set_ylabel("Time / min", fontsize=fs, color="C1")
+    ax2.errorbar(range(len(num_gpus)), y2_vals, yerr=y2_rmse, marker='o', ms=ms, linestyle='-', color="C1",
+                 label="Time", lw=lw, capsize=2, elinewidth=elw)
+    ax2.set_ylabel("Time [min]", fontsize=fs, color="C1")
     ax2.tick_params(axis='y', labelsize=fs)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
 
 
-def plot_scaling_top1(result_path, name, gpus, top1, total_energies):
+def plot_scaling_per_gpu(result_path, data, scaling_list, name):
     """
-    Plots strong and weak scaling with top1 error and consumed energy.
+    Plots strong and weak scaling with total run times and consumed energy.
     Parameters
     __________
     result_path : Path
-        Path to results
+        Path to results.
+    data : dict
+        Results saved in nested dictionary.
+    scaling_list : dict
+        Labels saved in dict.
     name : str
         Name for the plot to be saves.
-    gpus : list
-        Number of gpus for each experiment
-    top1 : list
-        Top1 error for each experiment
-    total_energies : list
-        Consumed energy for each experiment
     """
     fs = 7
-    ms = 3
+    ms = 2
     lw = 1
-    log_gpu = []
-    for i in gpus:
-        val = np.log2(int(i))
-        label = f"2$^{int(val)}$"
-        log_gpu.append(label)
+    elw = 1
+    y1_vals = []
+    y2_vals = []
+    y1_rmse = []
+    y2_rmse = []
+    num_gpus = []
+    for folder in scaling_list:
+        y1_vals.append(data[folder]["mean"]["perun_energy_per_gpu"])
+        y2_vals.append(data[folder]["mean"]["perun_time_per_gpu"])
+        y1_rmse.append(data[folder]["rmse"]["perun_energy_per_gpu"])
+        y2_rmse.append(data[folder]["rmse"]["perun_time_per_gpu"])
+        num_gpus.append(data[folder]["gpus"])
     fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
-    name = name + "_with_top1"
+    name = name + "_perun_data_per_node"
     target_path = Path(result_path, name)
-    ax1.plot(range(len(gpus)), total_energies, marker='o', ms=ms, linestyle='-', color='C0', label="Energy", lw=lw)
+    ax1.errorbar(range(len(num_gpus)), y1_vals, yerr=y1_rmse, marker='o', ms=ms, linestyle='-', color="C0",
+                 label="Energy", lw=lw, capsize=2, elinewidth=elw)
     ax1.set_xlabel("Number of GPUs", fontsize=fs)
-    ax1.set_xticks(range(len(gpus)))
-    ax1.set_xticklabels(log_gpu, fontsize=fs)
-    ax1.set_ylabel("Energy / MJ", fontsize=fs, color="C0")
+    ax1.set_xticks(range(len(num_gpus)))
+    ax1.set_xticklabels(num_gpus, fontsize=fs)
+    ax1.set_ylabel("Energy / GPUs [kWh]", fontsize=fs, color="C0")
     ax1.tick_params(axis='y', labelsize=fs)
     ax2 = ax1.twinx()
-    ax2.plot(range(len(gpus)), top1, marker='o', ms=ms, linestyle='-', color='C1', label="Top1 Error", lw=lw)
-    ax2.set_ylabel("Top1 Error / %", fontsize=fs, color="C1")
+    ax2.errorbar(range(len(num_gpus)), y2_vals, yerr=y2_rmse, marker='o', ms=ms, linestyle='-', color="C1",
+                 label="Time", lw=lw, capsize=2, elinewidth=elw)
+    ax2.set_ylabel("Time / GPUs [min]", fontsize=fs, color="C1")
     ax2.tick_params(axis='y', labelsize=fs)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
 
@@ -154,71 +183,5 @@ def plot_top1(result_path, scaling_list, name, key):
     ax1.set_xticklabels([str(int(tick+1)) for tick in xticks], fontsize=fs)
     ax1.set_ylabel("Top1 error / %", fontsize=fs)
     ax1.tick_params(axis='y', labelsize=fs)
-    ax1.legend(loc='upper right', fontsize=fs)#, handlelength=1.0)
+    ax1.legend(loc='upper right', fontsize=fs)  # , handlelength=1.0)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
-
-
-def plot_scaling(result_path, scaling_list, name):
-    """
-    Plots strong and weak scaling.
-    Parameters
-    __________
-    result_path : Path
-        Path to results
-    scaling_list : list
-        Names of specific folders within result path. Saved as strings.
-    name : str
-        Name for the plot to be saves.
-    """
-    times = []
-    total_energies = []
-    gpus = []
-    top1_valid_errors = []
-
-    for folder in scaling_list:
-        # Get setup
-        num_gpus = int(folder.split("g")[0])
-        lbs = int((folder.split("b")[0]).split("g")[-1])
-        gbs = lbs * num_gpus
-        gpus.append(num_gpus)
-
-        # Get perun data
-        perun_h5_file = Path(result_path, folder, "perun", "perun.hdf5")
-        h5val = h5py.File(perun_h5_file, 'r')
-        perun_data = get_perun_data(h5val)
-        # Get Total energies
-        gpu = []
-        cpu = []
-        ram = []
-        for key, _ in perun_data.items():
-            for num, _ in perun_data[key]["gpu"].items():
-                gpu.append(perun_data[key]["gpu"][num]["energy"][-1] / 10 ** 6)
-            for num, _ in perun_data[key]["cpu"].items():
-                cpu.append(perun_data[key]["cpu"][num]["energy"][-1] / 10 ** 6)
-            for num, _ in perun_data[key]["ram"].items():
-                ram.append(perun_data[key]["ram"][num]["energy"][-1] / 10 ** 6)
-        gpu_total = np.array(gpu).sum()
-        cpu_total = np.array(cpu).sum()
-        ram_total = np.array(ram).sum()
-        total_energy = gpu_total + cpu_total + ram_total
-        total_energies.append(total_energy)
-        # Get perun last time:
-        time_list = []
-        for key, _ in perun_data.items():
-            for num, _ in perun_data[key]["gpu"].items():
-                time_list.append(perun_data[key]["gpu"][num]["timesteps"][-1])
-            for num, _ in perun_data[key]["cpu"].items():
-                time_list.append(perun_data[key]["cpu"][num]["timesteps"][-1])
-            for num, _ in perun_data[key]["ram"].items():
-                time_list.append(perun_data[key]["ram"][num]["timesteps"][-1])
-        total_time = (max(time_list)) / 60
-        times.append(total_time)
-
-        # Get Top1
-        path = Path(result_path, folder, "valid_top1.pt")
-        top1_valid_acc = torch.load(path)
-        top1_valid_errors.append(100 - top1_valid_acc[-1])
-
-    # Plot it
-    plot_scaling_time(result_path, name, gpus, times, total_energies)
-    plot_scaling_top1(result_path, name, gpus, top1_valid_errors, total_energies)
