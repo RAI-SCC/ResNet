@@ -18,12 +18,12 @@ if not path_to_script.exists:
 
 experiments = {"256g256l": dict([("RUNTIME", "02:00:00"), ("NNODES", "64"), ("LBS", "256")]),  # 0.5 h
                "256g32l": dict([("RUNTIME", "02:00:00"), ("NNODES", "64"), ("LBS", "32")]),  # 0.5 h
-               "128g256l": dict([("RUNTIME", "05:00:00"), ("NNODES", "32"), ("LBS", "256")]),  # 2 h
-               "128g64l": dict([("RUNTIME", "05:00:00"), ("NNODES", "32"), ("LBS", "64")]),  # 2 h
-               "64g256l": dict([("RUNTIME", "05:00:00"), ("NNODES", "16"), ("LBS", "256")]),  # 2 h
-               "64g128l": dict([("RUNTIME", "05:00:00"), ("NNODES", "16"), ("LBS", "128")]),  # 2 h
-               "32g256l": dict([("RUNTIME", "07:00:00"), ("NNODES", "8"), ("LBS", "256")]),  # 3 h
-               "16g256l": dict([("RUNTIME", "13:00:00"), ("NNODES", "4"), ("LBS", "256")])}  # 6 h
+               "128g256l": dict([("RUNTIME", "04:00:00"), ("NNODES", "32"), ("LBS", "256")]),  # 2 h
+               "128g64l": dict([("RUNTIME", "04:00:00"), ("NNODES", "32"), ("LBS", "64")]),  # 2 h
+               "64g256l": dict([("RUNTIME", "04:00:00"), ("NNODES", "16"), ("LBS", "256")]),  # 2 h
+               "64g128l": dict([("RUNTIME", "04:00:00"), ("NNODES", "16"), ("LBS", "128")]),  # 2 h
+               "32g256l": dict([("RUNTIME", "05:00:00"), ("NNODES", "8"), ("LBS", "256")]),  # 3 h
+               "16g256l": dict([("RUNTIME", "08:00:00"), ("NNODES", "4"), ("LBS", "256")])}  # 6 h
 
 for key in experiments:
     runtime = experiments[key]["RUNTIME"]
