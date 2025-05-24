@@ -1,7 +1,9 @@
 import time
+import pickle
 
 import torch
 from perun import monitor
+import h5py
 
 
 def warmup_goyal_fn(epoch, batchsize, warmup_epochs, reference_lr):
@@ -12,10 +14,11 @@ def warmup_goyal_fn(epoch, batchsize, warmup_epochs, reference_lr):
     if epoch == 0:
         lr = 1
     else:
-        lr = (reference_lr + (epoch / warmup_epochs) * diff_lr) / reference_lr
+        lr = (reference_lr + (epoch/warmup_epochs) * diff_lr) / reference_lr
     return lr
 
 
+@monitor()
 def compute_accuracy(model, data_loader):
     """
     Compute accuracy of model predictions on given labeled data.
@@ -46,6 +49,7 @@ def compute_accuracy(model, data_loader):
     return correct_pred.float() / num_examples * 100
 
 
+@monitor()
 def get_right(model, data_loader):
     """
     Compute the number of correctly predicted samples and the overall number of samples in a given dataset.
@@ -87,22 +91,22 @@ def get_right(model, data_loader):
         total_num_examples = torch.Tensor([total_num_examples]).cuda()
         top1_pred = torch.Tensor([top1_pred]).cuda()
         top5_pred = torch.Tensor([top5_pred]).cuda()
-        loss /= (i + 1)
+        loss /= (i+1)
         loss = torch.Tensor([loss]).cuda()
     return total_num_examples, loss, top1_pred, top5_pred
 
 
 @monitor()
 def train_model(
-        model,
-        num_epochs,
-        train_loader,
-        valid_loader,
-        optimizer,
-        start_time,
-        warmup_scheduler,
-        lr_scheduler,
-        warmup_epochs=0
+    model,
+    num_epochs,
+    train_loader,
+    valid_loader,
+    optimizer,
+    start_time,
+    warmup_scheduler,
+    lr_scheduler,
+    warmup_epochs=0
 ):
     """
     Train model in DDP fashion.
@@ -151,24 +155,42 @@ def train_model(
 
     if rank == 0:
         print("Start Training")
-        print(40 * "-")
+        print(40*"-")
 
+    epoch_times = {"epoch_time_batches": [], "epoch_time_communication": [], "epoch_time_total": []}
     for epoch in range(num_epochs):  # Loop over epochs.
+        etimer_1 = time.perf_counter()
         train_loader.sampler.set_epoch(epoch)
         model.train()  # Set model to training mode.
 
+        batch_times = {"batch_time_dataloading": [], "batch_time_forward": [],
+                       "batch_time_backward": [], "batch_time_total": []}
+
+        etimer_2 = time.perf_counter()
         for batch_idx, (features, targets) in enumerate(train_loader):  # Loop over mini batches.
             # Data to GPUs
+            btimer_1 = time.perf_counter()
             features = features.cuda()
             targets = targets.cuda()
+            btimer_2 = time.perf_counter()
+            batch_times["batch_time_dataloading"].append(btimer_2 - btimer_1)
             # Forward and backward pass.
             output = model(features)
+            btimer_3 = time.perf_counter()
+            batch_times["batch_time_forward"].append(btimer_3 - btimer_2)
             loss = torch.nn.functional.cross_entropy(output, targets)
             optimizer.zero_grad()
             loss.backward()
+            btimer_4 = time.perf_counter()
+            batch_times["batch_time_backward"].append(btimer_4 - btimer_3)
             optimizer.step()
+            btimer_5 = time.perf_counter()
+            batch_times["batch_time_total"].append(btimer_5 - btimer_1)
 
         model.eval()  # Set model to evaluation mode.
+        epoch_times[f"batch_times_e{epoch + 1}"] = batch_times
+        etimer_3 = time.perf_counter()
+        epoch_times["epoch_time_batches"].append(etimer_3 - etimer_2)
 
         with torch.no_grad():  # Disable gradient calculation.
             # Get rank-local numbers of correctly classified and overall samples in training and validation set.
@@ -220,6 +242,13 @@ def train_model(
                     lr_scheduler.step(valid_loss)
                 else:
                     lr_scheduler.step()
+        etimer_4 = time.perf_counter()
+        epoch_times["epoch_time_communication"].append(etimer_4 - etimer_3)
+        epoch_times["epoch_time_total"].append(etimer_4 - etimer_1)
+
+    local_dict = epoch_times
+    gathered_times = {}
+    torch.distributed.all_gather_object(gathered_times, local_dict)
 
     if rank == 0:
         torch.save(train_loss_history, f'train_loss.pt')
@@ -232,5 +261,19 @@ def train_model(
         torch.save(lr_history, f'lr.pt')
         torch.save({'epoch': epoch, 'model_state': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
+
+        with h5py.File('times.h5', 'w') as h5f:
+            for key1, val1 in gathered_times.items():
+                # Create node groups
+                h5f.create_group(f"{key1}")
+                for key2, val2 in gathered_times[key1].items():
+                    # Create batch groups
+                    if isinstance(val2, dict):
+                        h5f.create_group(f"{key1}/{key2}")
+                        for key3, val3 in gathered_times[key1][key2].items():
+                            h5f[f"{key1}/{key2}/{key3}"] = val3
+                    # write epoch items
+                    else:
+                        h5f[f"{key1}/{key2}"] = val2
 
     return valid_loss_history, top1_acc_train_history, top1_acc_valid_history, lr_history, time_history
