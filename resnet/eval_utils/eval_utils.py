@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from resnet.eval_utils.read_utils import get_perun_data
-from resnet.eval_utils.plot_utils import plot_scaling, plot_scaling_per_gpu
+from resnet.eval_utils.plot_utils import plot_scaling, plot_scaling_per_gpu, plot_scaling_per_workload
 from resnet.eval_utils.table_utils import make_table, make_small_table
 
 
@@ -47,9 +47,11 @@ def make_statistics(data, scaling_list):
     for folder in scaling_list:
         perun_time_list = []
         perun_time_per_gpu_list = []
+        perun_time_per_workload_list = []
         perun_gpu_h_list = []
         perun_energy_list = []
         perun_energy_per_gpu_list = []
+        perun_energy_per_workload_list = []
         top1_error_valid_list = []
         top5_error_valid_list = []
         top1_error_train_list = []
@@ -61,9 +63,11 @@ def make_statistics(data, scaling_list):
         for slurm_id in scaling_list[folder]:
             perun_time_list.append(data[folder][slurm_id]["perun_time"])
             perun_time_per_gpu_list.append(data[folder][slurm_id]["perun_time_per_gpu"])
+            perun_time_per_workload_list.append(data[folder][slurm_id]["perun_time_per_workload"])
             perun_gpu_h_list.append(data[folder][slurm_id]["perun_gpu_h"])
             perun_energy_list.append(data[folder][slurm_id]["perun_energy"])
             perun_energy_per_gpu_list.append(data[folder][slurm_id]["perun_energy_per_gpu"])
+            perun_energy_per_workload_list.append(data[folder][slurm_id]["perun_energy_per_workload"])
             top1_error_valid_list.append(data[folder][slurm_id]["top1_error_valid"])
             top5_error_valid_list.append(data[folder][slurm_id]["top5_error_valid"])
             top1_error_train_list.append(data[folder][slurm_id]["top1_error_train"])
@@ -78,6 +82,10 @@ def make_statistics(data, scaling_list):
         rmse = np.sqrt(np.mean((np.array(perun_time_per_gpu_list) - mean) ** 2))
         data[folder]["mean"]["perun_time_per_gpu"] = mean
         data[folder]["rmse"]["perun_time_per_gpu"] = rmse
+        mean = np.mean(np.array(perun_time_per_workload_list))
+        rmse = np.sqrt(np.mean((np.array(perun_time_per_workload_list) - mean) ** 2))
+        data[folder]["mean"]["perun_time_per_workload"] = mean
+        data[folder]["rmse"]["perun_time_per_workload"] = rmse
         mean = np.mean(np.array(perun_gpu_h_list))
         rmse = np.sqrt(np.mean((np.array(perun_gpu_h_list) - mean) ** 2))
         data[folder]["mean"]["perun_gpu_h"] = mean
@@ -90,6 +98,10 @@ def make_statistics(data, scaling_list):
         rmse = np.sqrt(np.mean((np.array(perun_energy_per_gpu_list) - mean) ** 2))
         data[folder]["mean"]["perun_energy_per_gpu"] = mean
         data[folder]["rmse"]["perun_energy_per_gpu"] = rmse
+        mean = np.mean(np.array(perun_energy_per_workload_list))
+        rmse = np.sqrt(np.mean((np.array(perun_energy_per_workload_list) - mean) ** 2))
+        data[folder]["mean"]["perun_energy_per_workload"] = mean
+        data[folder]["rmse"]["perun_energy_per_workload"] = rmse
         mean = np.mean(np.array(slurm_time_list))
         rmse = np.sqrt(np.mean((np.array(slurm_time_list) - mean) ** 2))
         data[folder]["mean"]["slurm_time"] = mean
@@ -132,6 +144,8 @@ def eval_scaling(result_path, scaling_list, name):
 
     data = {}
     for folder in scaling_list:
+        n_images_train = 1281167
+        n_images_valid = 50000
         data[folder] = {}
         gpus = int(folder.split("g")[0])
         lbs = int((folder.split("b")[0]).split("g")[-1])
@@ -197,9 +211,11 @@ def eval_scaling(result_path, scaling_list, name):
 
             data[folder][slurm_id]["perun_time"] = perun_time
             data[folder][slurm_id]["perun_time_per_gpu"] = data[folder][slurm_id]["perun_time"] / gpus
+            data[folder][slurm_id]["perun_time_per_workload"] = data[folder][slurm_id]["perun_time"] * gpus / n_images_train
             data[folder][slurm_id]["perun_gpu_h"] = (data[folder][slurm_id]["perun_time"] * gpus)/60
             data[folder][slurm_id]["perun_energy"] = perun_energy/3.6  # MJ in kWh
             data[folder][slurm_id]["perun_energy_per_gpu"] = data[folder][slurm_id]["perun_energy"] / gpus
+            data[folder][slurm_id]["perun_energy_per_workload"] = data[folder][slurm_id]["perun_energy"] * gpus / n_images_train
             data[folder][slurm_id]["top1_error_valid"] = 100 - top1_valid_acc[-1]
             data[folder][slurm_id]["top5_error_valid"] = 100 - top5_valid_acc[-1]
             data[folder][slurm_id]["top1_error_train"] = 100 - top1_train_acc[-1]
@@ -212,6 +228,7 @@ def eval_scaling(result_path, scaling_list, name):
     # Plot it
     plot_scaling(result_path, data, scaling_list, name)
     plot_scaling_per_gpu(result_path, data, scaling_list, name)
+    plot_scaling_per_workload(result_path, data, scaling_list, name)
     # make table
     make_table(result_path, data, scaling_list, name)
     make_small_table(result_path, data, scaling_list, name)

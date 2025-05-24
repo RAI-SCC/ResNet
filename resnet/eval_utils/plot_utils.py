@@ -130,6 +130,53 @@ def plot_scaling_per_gpu(result_path, data, scaling_list, name):
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
 
 
+def plot_scaling_per_workload(result_path, data, scaling_list, name):
+    """
+    Plots strong and weak scaling with total run times and consumed energy.
+    Parameters
+    __________
+    result_path : Path
+        Path to results.
+    data : dict
+        Results saved in nested dictionary.
+    scaling_list : dict
+        Labels saved in dict.
+    name : str
+        Name for the plot to be saves.
+    """
+    fs = 7
+    ms = 2
+    lw = 1
+    elw = 1
+    y1_vals = []
+    y2_vals = []
+    y1_rmse = []
+    y2_rmse = []
+    num_gpus = []
+    for folder in scaling_list:
+        y1_vals.append(data[folder]["mean"]["perun_energy_per_workload"])
+        y2_vals.append(data[folder]["mean"]["perun_time_per_workload"])
+        y1_rmse.append(data[folder]["rmse"]["perun_energy_per_workload"])
+        y2_rmse.append(data[folder]["rmse"]["perun_time_per_workload"])
+        num_gpus.append(data[folder]["gpus"])
+    fig, ax1 = plt.subplots(figsize=(3.5, 1.5))
+    name = name + "_perun_data_per_workload"
+    target_path = Path(result_path, name)
+    ax1.errorbar(range(len(num_gpus)), y1_vals, yerr=y1_rmse, marker='o', ms=ms, linestyle='-', color="C0",
+                 label="Energy", lw=lw, capsize=2, elinewidth=elw)
+    ax1.set_xlabel("Number of GPUs", fontsize=fs)
+    ax1.set_xticks(range(len(num_gpus)))
+    ax1.set_xticklabels(num_gpus, fontsize=fs)
+    ax1.set_ylabel("Energy / Workload [kWh]", fontsize=fs, color="C0")
+    ax1.tick_params(axis='y', labelsize=fs)
+    ax2 = ax1.twinx()
+    ax2.errorbar(range(len(num_gpus)), y2_vals, yerr=y2_rmse, marker='o', ms=ms, linestyle='-', color="C1",
+                 label="Time", lw=lw, capsize=2, elinewidth=elw)
+    ax2.set_ylabel("Time / Workload [min]", fontsize=fs, color="C1")
+    ax2.tick_params(axis='y', labelsize=fs)
+    plt.savefig(target_path, dpi=300, bbox_inches='tight')
+
+
 def plot_top1(result_path, scaling_list, name, key):
     """
     Plot the Top1 errors versus epochs.
