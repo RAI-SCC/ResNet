@@ -3,6 +3,7 @@ import torchvision as tv
 from perun import monitor
 import numpy as np
 import random
+from collections import defaultdict
 
 
 def worker_init_seed_fn(worker_id):
@@ -15,7 +16,12 @@ def worker_init_seed_fn(worker_id):
 
 
 @monitor()
-def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = False, path_to_data: str = "./", seed_training: bool = False):
+def dataloader(batch_size: int = 32,
+               num_workers: int = 8,
+               subset_size: int = None,
+               path_to_data: str = "./",
+               seed_training: bool = False,
+               seed: int = None):
     """
     Get distributed ImageNet dataloaders for training and validation in a DDP setting.
 
@@ -25,6 +31,14 @@ def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = Fa
         Batch size.
     num_workers : int
         How many workers to use for data loading.
+    subset_size : int
+        Number of samples used.
+    path_to_data : str
+        Path to data.
+    seed_training : bool
+        Use deterministic training if True.
+    seed : int
+        Seed for deterministic training.
     """
 
     # Define Paths
@@ -49,19 +63,39 @@ def dataloader(batch_size: int = 32, num_workers: int = 8, use_subset: bool = Fa
     train_dataset = tv.datasets.ImageFolder(root=path_to_train, transform=train_transform)
     valid_dataset = tv.datasets.ImageFolder(root=path_to_valid, transform=train_transform)
 
-    # subset for fast debugging - to be deleted
-    if use_subset:
-        subset_ratio = 0.01
-        # Get subset indices
-        train_size_sub = int(len(train_dataset) * subset_ratio)
-        valid_size_sub = int(len(valid_dataset) * subset_ratio)
-        train_indices = np.random.choice(len(train_dataset), train_size_sub, replace=False)
-        valid_indices = np.random.choice(len(valid_dataset), valid_size_sub, replace=False)
-        # Create subset datasets
+    # Use a subset
+    if subset_size is not None:
+        if seed_training is True:
+            np.random.seed(seed)
+        targets = np.array(train_dataset.targets)
+        class_indices = defaultdict(list)
+        total_size = len(targets)
+        # Get indices for each label
+        for idx, label in enumerate(targets):
+            class_indices[label].append(idx)
+        # Get fraction for correct distribution
+        class_share_ints = {}
+        class_share_diff = {}
+        intermediate_size = 0
+        for label in class_indices:
+            label_share = len(class_indices[label]) / total_size
+            fraction = label_share * subset_size
+            class_share_ints[label] = int(fraction)
+            class_share_diff[label] = fraction - int(fraction)
+            intermediate_size += int(fraction)
+        # Get indices for subset
+        train_indices = []
+        diff = subset_size - intermediate_size
+        top_n = sorted(class_share_diff.items(), key=lambda x: x[1], reverse=True)[:diff]
+        for label in class_share_ints:
+            fraction = class_share_ints[label]
+            if label in [lbl for lbl, _ in top_n]:
+                fraction += 1
+            train_indices.append(np.random.choice(class_indices[label], fraction, replace=False))
+        train_indices = np.concatenate(train_indices).tolist()
+        # Create subset
         train_dataset_sub = torch.utils.data.Subset(train_dataset, train_indices)
-        valid_dataset_sub = torch.utils.data.Subset(valid_dataset, valid_indices)
         train_dataset = train_dataset_sub
-        valid_dataset = valid_dataset_sub
 
     # Define sampler that restricts data loading to a subset of the dataset
     train_sampler = torch.utils.data.distributed.DistributedSampler(

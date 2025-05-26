@@ -26,16 +26,17 @@ experiments = {"256g256l": dict([("RUNTIME", "02:00:00"), ("NNODES", "64"), ("LB
                "32g256l": dict([("RUNTIME", "05:00:00"), ("NNODES", "8"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4")]),  # 3 h
                "16g256l": dict([("RUNTIME", "08:00:00"), ("NNODES", "4"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4")])}  # 6 h
 # small scaling const LBS
-experiments = {"1g256l": dict([("RUNTIME", "96:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1")]),  # 96 h
+experiments = {"1g256l": dict([("RUNTIME", "90:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1")]),  # 982 h
                "2g256l": dict([("RUNTIME", "48:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "2"), ("GPUs", "2")]),  # 48 h
                "4g256l": dict([("RUNTIME", "24:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4")]),  # 24 h
                "8g256l": dict([("RUNTIME", "12:00:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "8"), ("GPUs", "8")])}  # 12 h
 
 # small scaling const GBS
-experiments = {"1g256l": dict([("RUNTIME", "96:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1")]),  # > 96 h
-               "2g128l": dict([("RUNTIME", "48:00:00"), ("NNODES", "1"), ("LBS", "128"), ("TASKS", "2"), ("GPUs", "2")]),  # > 48 h
-               "4g64l": dict([("RUNTIME", "24:00:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4")]),  # > 24 h
-               "8g32l": dict([("RUNTIME", "12:00:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "8"), ("GPUs", "8")])}  # > 12 h
+experiments = {"1g256l": dict([("RUNTIME", "90:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1")]),  # 82 h
+               "2g128l": dict([("RUNTIME", "48:00:00"), ("NNODES", "1"), ("LBS", "128"), ("TASKS", "2"), ("GPUs", "2")]),  # 40 h
+               "4g64l": dict([("RUNTIME", "26:00:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4")]),  # 22 h
+               "8g32l": dict([("RUNTIME", "14:00:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "8"), ("GPUs", "8")]),  # 12 h
+               "16g16l": dict([("RUNTIME", "8:00:00"), ("NNODES", "2"), ("LBS", "16"), ("TASKS", "8"), ("GPUs", "8")])}  # 7 h
 
 for key in experiments:
     runtime = experiments[key]["RUNTIME"]
