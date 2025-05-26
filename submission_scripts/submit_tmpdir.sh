@@ -28,7 +28,7 @@ export MASTER_ADDR=$master_addr
 echo "MASTER_ADDR="$MASTER_ADDR
 
 # Pyvenv
-source /hkfs/home/project/hk-project-p0021348/xy6660/ResNet14042025/pyvenv311/bin/activate
+source /hkfs/work/workspace/scratch/xy6660-ResImageNet/pyvenv3.11/bin/activate
 
 if [ -n "$SLURM_NPROCS" ]; then
     export NUM_GPUS=$SLURM_NPROCS
@@ -45,7 +45,7 @@ export RANDOM_SEED=0
 export LR_SCHEDULER="plateau"
 
 # Set paths
-export PYDIR=/hkfs/home/project/hk-project-p0021348/xy6660/ResNet14042025/ResNet
+export PYDIR=/hkfs/work/workspace/scratch/xy6660-ResImageNet/ResNet
 export EXP_BASE=/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments
 export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
 mkdir ${EXP_TYPE}
@@ -65,6 +65,7 @@ cd ${RESDIR}
 # --num_epochs: number of epochs the model will be trained
 # --seed: to enable deterministic training
 # --lr_scheduler: [cosine, plateau, multistep], choose learning rate scheduler
+# --subset_size: Size of Subset, i.e. number of Samples. If None, the full dataset is used
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \

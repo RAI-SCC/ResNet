@@ -21,22 +21,24 @@ def main():
     #  num_worker, batch size, epochs, ResNet size
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use_subset", action="store_true")  # a tag to use data subset for debugging
-    parser.add_argument("--data_path", default="./", type=str)
-    parser.add_argument("--batchsize", default=1, type=int)
-    parser.add_argument("--num_epochs", default=2, type=int)
-    parser.add_argument("--num_workers", default=2, type=int)
-    parser.add_argument("--lr_scheduler", default="plateau", type=str, choices=["cosine", "plateau", "multistep"], help="Choose learning rate scheduler (cosine, plateau, multistep)")
-    parser.add_argument('--seed', default=None, type=int, help='seed for initializing training. ')
+    parser.add_argument("--subset_size", default=None, type=int, help='Size of Subset, i.e. number of Samples. If None, the full dataset is used')
+    parser.add_argument("--data_path", default="./", type=str, help='Path to data.')
+    parser.add_argument("--batchsize", default=1, type=int, help='Global batch size.')
+    parser.add_argument("--num_epochs", default=2, type=int, help='Number of epochs to be trained.')
+    parser.add_argument("--num_workers", default=2, type=int, help='Number of workers used in dataloader.')
+    parser.add_argument("--lr_scheduler", default="plateau", type=str, choices=["cosine", "plateau", "multistep"], help="Choose learning rate scheduler (cosine, plateau, multistep).")
+    parser.add_argument('--seed', default=None, type=int, help='seed for initializing training')
     args = parser.parse_args()
 
+    seed_training = False
     if args.seed is not None:
         random.seed(args.seed)
         torch.manual_seed(args.seed)
         torch.cuda.manual_seed(args.seed)  
         torch.cuda.manual_seed_all(args.seed)
         torch.backends.cudnn.deterministic = True  # Ensures deterministic behavior
-        torch.backends.cudnn.benchmark = False 
+        torch.backends.cudnn.benchmark = False
+        seed_training = True
     
     start_time = time.perf_counter()
 
@@ -59,6 +61,8 @@ def main():
     if rank == 0:
         if args.seed is not None:
             print(f"Deterministic training is enabled")
+        if args.subset_size is not None:
+            print(f"A data subset of {args.subset_size} samples ist used")
         print(f"{30*'-'} \n"
               f"CUDA Available: {torch.cuda.is_available()} \n"
               f"Number of GPUs: {world_size} \n"
@@ -80,20 +84,13 @@ def main():
         print(f"Use Data Subset: {args.use_subset}")
 
     # Get distributed dataloaders on all ranks.
-    if args.seed is not None:
-        train_loader, valid_loader = dataloader(
-            batch_size=args.batchsize, 
-            num_workers=args.num_workers, 
-            use_subset=args.use_subset, 
-            path_to_data=args.data_path,
-            seed_training=True
-        )
-    else: 
-        train_loader, valid_loader = dataloader(
-            batch_size=args.batchsize, 
-            num_workers=args.num_workers, 
-            use_subset=args.use_subset, 
-            path_to_data=args.data_path
+    train_loader, valid_loader = dataloader(
+        batch_size=args.batchsize,
+        num_workers=args.num_workers,
+        use_subset=args.subset_size,
+        path_to_data=args.data_path,
+        seed_training=seed_training,
+        seed=args.seed
         )
 
     model = ResNet().to(device)  # Create model and move it to GPU with id rank.

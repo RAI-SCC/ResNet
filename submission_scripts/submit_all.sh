@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=resnet
-#SBATCH --partition=dev_accelerated
+#SBATCH --partition=accelerated
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-p0021348
@@ -64,6 +64,8 @@ cd ${RESDIR}
 # --num_epochs: number of epochs the model will be trained
 # --seed: to enable deterministic training
 # --lr_scheduler: [cosine, plateau, multistep], choose learning rate scheduler
+# --subset_size: Size of Subset, i.e. number of Samples. If None, the full dataset is used
+
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
