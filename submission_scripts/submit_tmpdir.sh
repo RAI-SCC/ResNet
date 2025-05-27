@@ -51,7 +51,7 @@ export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_
 mkdir ${EXP_TYPE}
 export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
 mkdir ${RESDIR}
-export DATA_PATH="$TMPDIR/imagenet-2012"
+export DATA_PATH="$TMPDIR/imagenet-2012/CLS-LOC"
 
 PERUN_OUT="$RESDIR/perun"
 PERUN_APP_NAME="perun"
@@ -59,7 +59,6 @@ PERUN_APP_NAME="perun"
 cd ${RESDIR}
 
 # arguments for the training:
-# --use_subset: optional. if used, then only small amount of data set is used in training for faster debugging
 # --data_path: path to training, valid data
 # --batchsize: global batch size
 # --num_epochs: number of epochs the model will be trained

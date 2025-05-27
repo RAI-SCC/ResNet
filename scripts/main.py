@@ -69,7 +69,6 @@ def main():
               f"Global Batch Size: {args.batchsize} \n"
               f"Local Batch Size: {int(args.batchsize / world_size)} \n"
               f"Max Epoch: {args.num_epochs} \n"
-              f"Use Data Subset: {args.use_subset} \n"
               f"Number of Workers: {args.num_workers} \n"
               f"LR Scheduler: {args.lr_scheduler} \n"
               f"{30*'-'}")
@@ -81,13 +80,12 @@ def main():
         print(f"CUDA Available: {torch.cuda.is_available()}")
         print(f"Batch Size: {args.batchsize}")
         print(f"Max Epoch: {args.num_epochs}")
-        print(f"Use Data Subset: {args.use_subset}")
 
     # Get distributed dataloaders on all ranks.
     train_loader, valid_loader = dataloader(
         batch_size=args.batchsize,
         num_workers=args.num_workers,
-        use_subset=args.subset_size,
+        subset_size=args.subset_size,
         path_to_data=args.data_path,
         seed_training=seed_training,
         seed=args.seed
