@@ -19,14 +19,14 @@ classifiers = [
     "Development Status :: 3 - Alpha",
 ]
 dependencies = [
-    "numpy>=1.20.0",
-    "h5py>=3.5.9",
-    "scipy",
-    "torch",
-    "torchvision",
-    "mpi4py>=3.1",
-    "perun[mpi,nvidia,rocm]>=0.8.9",
-    "matplotlib"
+    "numpy==2.2.5",
+    "h5py==3.13.0",
+    "scipy==1.15.3",
+    "torch==2.7.0",
+    "torchvision==0.22.0",
+    "mpi4py==4.0.3",
+    "perun[mpi,nvidia,rocm]==0.8.10",
+    "matplotlib==3.10.3"
 ]
 
 [tool.ruff]
