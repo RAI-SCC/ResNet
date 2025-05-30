@@ -71,8 +71,7 @@ def get_right(model, data_loader, epoch_times, epoch, what):
         Loss
     """
 
-    val_times = {"val_time_dataloading": [], "val_time_forward": [],
-                   "val_time_eval": [], "val_time_vals_to_gpu": []}
+    val_times = {"val_time_dataloading": [], "val_time_forward": [], "val_time_eval": []}
     with torch.no_grad():
         top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
         etimer_1 = time.perf_counter()
@@ -99,14 +98,14 @@ def get_right(model, data_loader, epoch_times, epoch, what):
             val_times["val_time_eval"].append(vtimer_4 - vtimer_3)
         epoch_times[f"val_times_{what}_e{epoch + 1}"] = val_times
         etimer_2 = time.perf_counter()
-        epoch_times["epoch_time_validation"].append(etimer_2 - etimer_1)
+        epoch_times[f"epoch_time_validation_{what}"].append(etimer_2 - etimer_1)
         total_num_examples = torch.Tensor([total_num_examples]).cuda()
         top1_pred = torch.Tensor([top1_pred]).cuda()
         top5_pred = torch.Tensor([top5_pred]).cuda()
         loss /= (i+1)
         loss = torch.Tensor([loss]).cuda()
         etimer_3 = time.perf_counter()
-        epoch_times["epoch_time_evaluation"].append(etimer_3 - etimer_2)
+        epoch_times[f"epoch_time_evaluation_{what}"].append(etimer_3 - etimer_2)
     return total_num_examples, loss, top1_pred, top5_pred, epoch_times
 
 
@@ -171,8 +170,8 @@ def train_model(
         print("Start Training")
         print(40*"-")
 
-    epoch_times = {"epoch_time_batches": [], "epoch_time_allreduce": [], "epoch_time_append": [],
-                   "epoch_time_total": [], "epoch_time_validation": [], "epoch_time_evaluation": []}
+    epoch_times = {"epoch_time_batches": [], "epoch_time_allreduce": [], "epoch_time_total": [], "epoch_time_validation": [],
+                   "epoch_time_evaluation": [], "epoch_time_validate_valid": [], "epoch_time_validate_train": [], "epoch_time_save_data": []}
     for epoch in range(num_epochs):  # Loop over epochs.
         etimer_1 = time.perf_counter()
         train_loader.sampler.set_epoch(epoch)
@@ -211,10 +210,10 @@ def train_model(
             # Get rank-local numbers of correctly classified and overall samples in training and validation set.
             num_train, train_loss, top1_pred_train, top5_pred_train, epoch_times = get_right(model, train_loader, epoch_times, epoch, "train")
             etimer_4 = time.perf_counter()
-            epoch_times["epoch_time_validate_valid"].append(etimer_4 - etimer_3)
+            epoch_times["epoch_time_validate_train"].append(etimer_4 - etimer_3)
             num_valid, valid_loss, top1_pred_valid, top5_pred_valid, epoch_times = get_right(model, valid_loader, epoch_times, epoch, "valid")
             etimer_5 = time.perf_counter()
-            epoch_times["epoch_time_validate_train"].append(etimer_5 - etimer_4)
+            epoch_times["epoch_time_validate_valid"].append(etimer_5 - etimer_4)
             # Allreduce rank-local numbers of correctly classified and overall training and validation samples.
             torch.distributed.all_reduce(top1_pred_train)
             torch.distributed.all_reduce(top5_pred_train)

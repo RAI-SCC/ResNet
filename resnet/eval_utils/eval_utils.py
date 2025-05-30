@@ -42,6 +42,75 @@ def get_total_energy(h5val: h5py = None):
           )
 
 
+def get_timings(h5val: h5py = None):
+    """
+    Evaluates the compute times of the training.
+
+    Parameters
+    ----------
+    h5val : h5py
+        Value vor hdf5 file with results
+    """
+    epoch_times = {"epoch_time_batches": 0, "epoch_time_allreduce": 0, "epoch_time_total": 0, "epoch_time_validation": 0,
+                   "epoch_time_evaluation": 0, "epoch_time_validate_valid": 0, "epoch_time_validate_train": 0, "epoch_time_save_data": 0}
+
+    batch_times = {"e1" : {}, "e2" : {}}
+    batch_times["e1"] =  {"batch_time_dataloading": 0, "batch_time_forward": 0,  "batch_time_backward": 0, "batch_time_total": 0}
+    batch_times["e2"] = {"batch_time_dataloading": 0, "batch_time_forward": 0,  "batch_time_backward": 0, "batch_time_total": 0}
+    validation_valid_times = {"e1": {}, "e2": {}}
+    validation_valid_times["e1"] =  {"val_time_dataloading": 0, "val_time_forward": 0, "val_time_eval": 0}
+    validation_valid_times["e2"] = {"val_time_dataloading": 0, "val_time_forward": 0, "val_time_eval": 0}
+    validation_train_times = {"e1": {}, "e2": {}}
+    validation_train_times["e1"] =  {"val_time_dataloading": 0, "val_time_forward": 0, "val_time_eval": 0}
+    validation_train_times["e2"] = {"val_time_dataloading": 0, "val_time_forward": 0, "val_time_eval": 0}
+
+    num_gpus = 0
+    for rank_id, rank_obj in h5val.items():
+        num_gpus = max(int(rank_id)+1, num_gpus)
+        for key in epoch_times:
+            epoch_times[key] = np.add(epoch_times[key], np.array(h5val[rank_id][key]))
+
+        for key in validation_valid_times["e1"]:
+            validation_valid_times["e1"][key] = np.add(validation_valid_times["e1"][key], np.array(h5val[rank_id]["val_times_valid_e1"][key]))
+
+        for key in validation_valid_times["e2"]:
+            validation_valid_times["e2"][key] = np.add(validation_valid_times["e2"][key], np.array(h5val[rank_id]["val_times_valid_e2"][key]))
+
+        for key in validation_train_times["e1"]:
+            validation_train_times["e1"][key] = np.add(validation_train_times["e1"][key], np.array(h5val[rank_id]["val_times_train_e1"][key]))
+
+        for key in validation_train_times["e2"]:
+            validation_train_times["e2"][key] = np.add(validation_train_times["e2"][key], np.array(h5val[rank_id]["val_times_train_e2"][key]))
+
+        for key in batch_times["e1"]:
+            batch_times["e1"][key] = np.add(batch_times["e1"][key], np.array(h5val[rank_id]["batch_times_e1"][key]))
+
+        for key in batch_times["e2"]:
+            batch_times["e2"][key] = np.add(batch_times["e2"][key], np.array(h5val[rank_id]["batch_times_e2"][key]))
+
+    for key in epoch_times:
+        epoch_times[key] /= num_gpus
+        print(key, sum(epoch_times[key]) / len(epoch_times[key]))
+    for key in batch_times["e1"]:
+        batch_times["e1"][key] /= num_gpus
+        print("e1", key, sum(batch_times["e1"][key]))
+    for key in batch_times["e2"]:
+        batch_times["e2"][key] /= num_gpus
+        print("e2", key, sum(batch_times["e2"][key]))
+    for key in validation_train_times["e1"]:
+        validation_train_times["e1"][key] /= num_gpus
+        print("e1", key, sum(validation_train_times["e1"][key]))
+    for key in validation_train_times["e2"]:
+        validation_train_times["e2"][key] /= num_gpus
+        print("e2", key, sum(validation_train_times["e2"][key]))
+    for key in validation_valid_times["e1"]:
+        validation_valid_times["e1"][key] /= num_gpus
+        print("e1", key, sum(validation_valid_times["e1"][key]))
+    for key in validation_valid_times["e2"]:
+        validation_valid_times["e2"][key] /= num_gpus
+        print("e2", key, sum(validation_valid_times["e2"][key]))
+
+
 def make_statistics(data, scaling_list):
 
     for folder in scaling_list:
@@ -142,6 +211,8 @@ def eval_scaling(result_path, scaling_list, name):
         Name for the plot to be saved.
     """
 
+    eval_timings = True
+
     data = {}
     for folder in scaling_list:
         n_images_train = 1281167
@@ -208,6 +279,18 @@ def eval_scaling(result_path, scaling_list, name):
                         slurm_time_min = slurm_time_string.split(":")[1]
                         slurm_time_s = slurm_time_string.split(":")[2]
                         slurm_time = float(slurm_time_h)*60 + float(slurm_time_min) + float(slurm_time_s)/60
+
+            # Get slurm data
+            timing_folder = str(folder).split("4w")[0] + "4w2e"
+            timing_path = Path(result_path, timing_folder, "times.h5")
+            print(timing_path)
+
+            if not timing_path.exists:
+                eval_timings = False
+                print(f"Timings for {folder} are missing - skip evaluation.")
+            else:
+                h5val = h5py.File(timing_path, 'r')
+                get_timings(h5val)
 
             data[folder][slurm_id]["perun_time"] = perun_time
             data[folder][slurm_id]["perun_time_per_gpu"] = data[folder][slurm_id]["perun_time"] / gpus
