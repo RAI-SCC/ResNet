@@ -119,7 +119,7 @@ def make_table(result_path, data, scaling_list, name):
             outf.write(line)
 
 
-def make_small_table(result_path, data, scaling_list, name):
+def make_small_table(result_path, data, name):
 
     path = Path(result_path, name+"_table_small.txt")
 
@@ -127,6 +127,7 @@ def make_small_table(result_path, data, scaling_list, name):
         print_list = ["GPUs",
                       "LBS",
                       "GBS",
+                      "Samples",
                       "Energy",
                       "Energy/node",
                       "Runtime",
@@ -137,6 +138,7 @@ def make_small_table(result_path, data, scaling_list, name):
         line = line + "\\\\ \n"
         outf.write(line)
         print_list = [" ",
+                      " ",
                       " ",
                       " ",
                       "[kWh]",
@@ -154,6 +156,7 @@ def make_small_table(result_path, data, scaling_list, name):
             gpus = data[experiment]["gpus"]
             lbs = data[experiment]["lbs"]
             gbs = data[experiment]["gbs"]
+            nsamples = data[experiment]["nsamples"]
             mean_perun_energy = data[experiment]["mean"]["perun_energy"]
             mean_perun_energy_per_gpu = data[experiment]["mean"]["perun_energy_per_gpu"]
             mean_perun_time = data[experiment]["mean"]["perun_time"]
@@ -167,6 +170,7 @@ def make_small_table(result_path, data, scaling_list, name):
             print_list = [str(gpus),
                           str(lbs),
                           str(gbs),
+                          str(nsamples),
                           rounded(mean_perun_energy) + " $\pm$ " + rounded(rmse_perun_energy),
                           rounded(mean_perun_energy_per_gpu) + " $\pm$ " + rounded(rmse_perun_energy_per_gpu),
                           rounded(mean_perun_time) + " $\pm$ " + rounded(rmse_perun_time),
@@ -178,3 +182,88 @@ def make_small_table(result_path, data, scaling_list, name):
             outf.write(line)
 
 
+def make_table_with_eff(result_path, data, name):
+
+    path = Path(result_path, name+"_table_small.txt")
+
+    with open(path, "w") as outf:
+        print_list = ["GPUs",
+                      "LBS",
+                      "GBS",
+                      "Samples",
+                      "Energy",
+                      " ",
+                      "Energy/node",
+                      " ",
+                      "Runtime",
+                      " ",
+                      "GPU hours",
+                      " ",
+                      "Top1 Error",
+                      " ",
+                      ]
+        line = " & ".join(print_list)
+        line = line + "\\\\ \n"
+        outf.write(line)
+        print_list = [" ",
+                      " ",
+                      " ",
+                      " ",
+                      "[kWh]",
+                      " ",
+                      "[kWh]",
+                      " ",
+                      "[min]",
+                      " ",
+                      "[h]",
+                      " ",
+                      "[\\%]",
+                      " ",
+                      ]
+        line = " & ".join(print_list)
+        line = line + "\\\\ \n"
+        outf.write(line)
+        outf.write("\\midrule \n")
+
+        for experiment in data:
+            gpus = data[experiment]["gpus"]
+            lbs = data[experiment]["lbs"]
+            gbs = data[experiment]["gbs"]
+            nsamples = data[experiment]["nsamples"]
+
+            mean_perun_energy = data[experiment]["mean"]["perun_energy"]
+            mean_perun_energy_per_node = data[experiment]["mean"]["perun_energy_per_node"]
+            mean_perun_time = data[experiment]["mean"]["perun_time"]
+            mean_perun_gpu_h = data[experiment]["mean"]["perun_gpu_h"]
+            mean_top1_error_valid = data[experiment]["mean"]["top1_error_valid"]
+
+            rmse_perun_energy = data[experiment]["rmse"]["perun_energy"]
+            rmse_perun_time = data[experiment]["rmse"]["perun_time"]
+            rmse_perun_gpu_h = data[experiment]["rmse"]["perun_gpu_h"]
+            rmse_top1_error_valid = data[experiment]["rmse"]["top1_error_valid"]
+            rmse_perun_energy_per_node = data[experiment]["rmse"]["perun_energy_per_node"]
+
+            eff_perun_energy = data[experiment]["efficiency"]["perun_energy"]
+            eff_perun_energy_per_node = data[experiment]["efficiency"]["perun_energy_per_node"]
+            eff_perun_time = data[experiment]["efficiency"]["perun_time"]
+            eff_perun_gpu_h = data[experiment]["efficiency"]["perun_gpu_h"]
+            eff_top1_error_valid = data[experiment]["efficiency"]["top1_error_valid"]
+
+            print_list = [str(gpus),
+                          str(lbs),
+                          str(gbs),
+                          str(nsamples),
+                          rounded(mean_perun_energy) + " $\pm$ " + rounded(rmse_perun_energy),
+                          rounded(eff_perun_energy),
+                          rounded(mean_perun_energy_per_node) + " $\pm$ " + rounded(rmse_perun_energy_per_node),
+                          rounded(eff_perun_energy_per_node),
+                          rounded(mean_perun_time) + " $\pm$ " + rounded(rmse_perun_time),
+                          rounded(eff_perun_time),
+                          rounded(mean_perun_gpu_h) + " $\pm$ " + rounded(rmse_perun_gpu_h),
+                          rounded(eff_perun_gpu_h),
+                          rounded(mean_top1_error_valid),  # + " $\pm$ " + rounded(rmse_top1_error_valid),
+                          rounded(eff_top1_error_valid),
+                          ]
+            line = " & ".join(print_list)
+            line = line + "\\\\ \n"
+            outf.write(line)

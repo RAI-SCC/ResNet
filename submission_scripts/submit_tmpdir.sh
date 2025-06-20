@@ -61,7 +61,6 @@ PERUN_APP_NAME="perun"
 cd ${RESDIR}
 
 # arguments for the training:
-# --use_subset: optional. if used, then only small amount of data set is used in training for faster debugging
 # --data_path: path to training, valid data
 # --batchsize: global batch size
 # --num_epochs: number of epochs the model will be trained

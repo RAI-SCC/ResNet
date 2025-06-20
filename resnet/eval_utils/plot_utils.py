@@ -232,3 +232,79 @@ def plot_top1(result_path, scaling_list, name, key):
     ax1.tick_params(axis='y', labelsize=fs)
     ax1.legend(loc='upper right', fontsize=fs)  # , handlelength=1.0)
     plt.savefig(target_path, dpi=300, bbox_inches='tight')
+
+
+def plot_efficiency(result_path, data, scaling_list, name):
+    """
+    Plots efficiencies.
+    Parameters
+    __________
+    result_path : Path
+        Path to results.
+    data : dict
+        Results saved in nested dictionary.
+    scaling_list : dict
+        Labels saved in dict.
+    name : str
+        Name for the plot to be saves.
+    """
+    fs = 7
+    ms = 3
+    lw = 1
+    elw = 1
+
+    energy_vals = []
+    time_vals = []
+    top1_vals = []
+    energy_per_node_vals = []
+    gpu_h_vals = []
+    num_gpus = []
+
+    for folder in scaling_list:
+        energy_vals.append(data[folder]["efficiency"]["perun_energy"])
+        time_vals.append(data[folder]["efficiency"]["perun_time"])
+        top1_vals.append(data[folder]["efficiency"]["top1_error_valid"])
+        energy_per_node_vals.append(data[folder]["efficiency"]["perun_energy_per_node"])
+        gpu_h_vals.append(data[folder]["efficiency"]["perun_gpu_h"])
+        num_gpus.append(data[folder]["gpus"])
+
+    fig, ax1 = plt.subplots(figsize=(3.5, 2.0))
+    name = name + "_eff"
+    target_path = Path(result_path, name)
+    lines = []
+
+    ax1.axhline(y=1, color='C0', linestyle='--', lw=lw*0.5)
+
+    l, = ax1.plot(range(len(num_gpus)), energy_per_node_vals, marker='_', ms=ms*2, linestyle=':', color="C0", label="Energy/Node", lw=lw)
+    lines.append(l)
+    l, = ax1.plot(range(len(num_gpus)), time_vals, marker='|', ms=ms*2, linestyle='--', color="C0", label="Runtime", lw=lw)
+    lines.append(l)
+    l, = ax1.plot(range(len(num_gpus)), top1_vals, marker='d', ms=ms, linestyle='-.', color="C0", label="Top1", lw=lw)
+    lines.append(l)
+
+    ax1.set_xlabel("Number of GPUs", fontsize=fs)
+    ax1.set_xticks(range(len(num_gpus)))
+    ax1.set_xticklabels(num_gpus, fontsize=fs)
+    ax1.set_ylabel("Efficiency", fontsize=fs, color="C0")
+    ax1.tick_params(axis='y', labelsize=fs)
+    #ax1.legend(fontsize=fs)
+
+    ax2 = ax1.twinx()
+    ax2.axhline(y=1, color='C1', linestyle='--', lw=lw * 0.5)
+
+    l, = ax2.plot(range(len(num_gpus)), gpu_h_vals, marker='o', ms=ms, linestyle=':', color="C1", label="GPU h", lw=lw)
+    lines.append(l)
+    l, = ax2.plot(range(len(num_gpus)), energy_vals, marker='s', ms=ms, linestyle='--', color="C1", label="Energy", lw=lw)
+    lines.append(l)
+
+    ax2.set_ylabel("Efficiency", fontsize=fs, color="C1")
+    ax2.tick_params(axis='y', labelsize=fs)
+
+    labels = [line.get_label() for line in lines]
+
+    # Combine legends and place them in front
+    ax2.legend(lines, labels, frameon=True, fontsize=fs)
+    #ax2.legend(fontsize=fs, zorder=9999)
+    #ax1.legend(fontsize=fs, zorder=999)
+    plt.savefig(target_path, dpi=300, bbox_inches='tight')
+

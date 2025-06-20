@@ -38,7 +38,7 @@ fi
 # Hyperparameters
 export LOCAL_BATCHSIZE=$LBS
 export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
-export NUM_EPOCHS=100
+export NUM_EPOCHS=$EPOCHS
 export NUM_WORKERS=4
 export RANDOM_SEED=0
 export LR_SCHEDULER="plateau"

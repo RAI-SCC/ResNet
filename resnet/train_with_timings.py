@@ -50,7 +50,7 @@ def compute_accuracy(model, data_loader):
 
 
 @monitor()
-def get_right(model, data_loader):
+def get_right(model, data_loader, epoch_times, epoch, what):
     """
     Compute the number of correctly predicted samples and the overall number of samples in a given dataset.
 
@@ -70,16 +70,21 @@ def get_right(model, data_loader):
     loss : float
         Loss
     """
+
+    val_times = {"val_time_dataloading": [], "val_time_forward": [], "val_time_eval": []}
     with torch.no_grad():
         top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
         for i, (features, targets) in enumerate(data_loader):
+            vtimer_1 = time.perf_counter()
             features = features.cuda()
             targets = targets.float().cuda()
+            vtimer_2 = time.perf_counter()
+            val_times["val_time_dataloading"].append(vtimer_2 - vtimer_1)
             output = model(features)
-
+            vtimer_3 = time.perf_counter()
+            val_times["val_time_forward"].append(vtimer_3 - vtimer_2)
             num_examples = targets.size(0)
             total_num_examples += num_examples
-
             loss += torch.nn.functional.cross_entropy(output, targets.long())
             top1_labels = torch.topk(output, 1, dim=1).indices  # Top-1 prediction
             top1_labels = top1_labels.reshape(top1_labels.shape[0])
@@ -88,12 +93,15 @@ def get_right(model, data_loader):
             top5_correct = sum([targets[j] in top5_labels[j] for j in range(num_examples)])
             top1_pred += top1_correct
             top5_pred += top5_correct
+            vtimer_4 = time.perf_counter()
+            val_times["val_time_eval"].append(vtimer_4 - vtimer_3)
+        epoch_times[f"val_times_{what}_e{epoch + 1}"] = val_times
         total_num_examples = torch.Tensor([total_num_examples]).cuda()
         top1_pred = torch.Tensor([top1_pred]).cuda()
         top5_pred = torch.Tensor([top5_pred]).cuda()
         loss /= (i+1)
         loss = torch.Tensor([loss]).cuda()
-    return total_num_examples, loss, top1_pred, top5_pred
+    return total_num_examples, loss, top1_pred, top5_pred, epoch_times
 
 
 @monitor()
@@ -157,7 +165,8 @@ def train_model(
         print("Start Training")
         print(40*"-")
 
-    epoch_times = {"epoch_time_batches": [], "epoch_time_communication": [], "epoch_time_total": []}
+    epoch_times = {"epoch_time_batches": [], "epoch_time_allreduce": [], "epoch_time_total": [], "epoch_time_validation": [],
+                   "epoch_time_evaluation": [], "epoch_time_validate_valid": [], "epoch_time_validate_train": [], "epoch_time_save_data": []}
     for epoch in range(num_epochs):  # Loop over epochs.
         etimer_1 = time.perf_counter()
         train_loader.sampler.set_epoch(epoch)
@@ -194,8 +203,12 @@ def train_model(
 
         with torch.no_grad():  # Disable gradient calculation.
             # Get rank-local numbers of correctly classified and overall samples in training and validation set.
-            num_train, train_loss, top1_pred_train, top5_pred_train = get_right(model, train_loader)
-            num_valid, valid_loss, top1_pred_valid, top5_pred_valid = get_right(model, valid_loader)
+            num_train, train_loss, top1_pred_train, top5_pred_train, epoch_times = get_right(model, train_loader, epoch_times, epoch, "train")
+            etimer_4 = time.perf_counter()
+            epoch_times["epoch_time_validate_train"].append(etimer_4 - etimer_3)
+            num_valid, valid_loss, top1_pred_valid, top5_pred_valid, epoch_times = get_right(model, valid_loader, epoch_times, epoch, "valid")
+            etimer_5 = time.perf_counter()
+            epoch_times["epoch_time_validate_valid"].append(etimer_5 - etimer_4)
             # Allreduce rank-local numbers of correctly classified and overall training and validation samples.
             torch.distributed.all_reduce(top1_pred_train)
             torch.distributed.all_reduce(top5_pred_train)
@@ -205,6 +218,8 @@ def train_model(
             torch.distributed.all_reduce(num_valid)
             torch.distributed.all_reduce(valid_loss)
             torch.distributed.all_reduce(train_loss)
+            etimer_6 = time.perf_counter()
+            epoch_times["epoch_time_allreduce"].append(etimer_6 - etimer_5)
             # Calculate correct values
             time_elapsed = (time.perf_counter() - start_time) / 60
             top1_acc_train = top1_pred_train.item() / num_train.item() * 100
@@ -242,9 +257,9 @@ def train_model(
                     lr_scheduler.step(valid_loss)
                 else:
                     lr_scheduler.step()
-        etimer_4 = time.perf_counter()
-        epoch_times["epoch_time_communication"].append(etimer_4 - etimer_3)
-        epoch_times["epoch_time_total"].append(etimer_4 - etimer_1)
+        etimer_7 = time.perf_counter()
+        epoch_times["epoch_time_save_data"].append(etimer_7 - etimer_6)
+        epoch_times["epoch_time_total"].append(etimer_7 - etimer_1)
 
     local_dict = epoch_times
     gathered_times = {}
