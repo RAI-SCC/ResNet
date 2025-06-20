@@ -74,7 +74,6 @@ def get_right(model, data_loader, epoch_times, epoch, what):
     val_times = {"val_time_dataloading": [], "val_time_forward": [], "val_time_eval": []}
     with torch.no_grad():
         top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
-        etimer_1 = time.perf_counter()
         for i, (features, targets) in enumerate(data_loader):
             vtimer_1 = time.perf_counter()
             features = features.cuda()
@@ -97,15 +96,11 @@ def get_right(model, data_loader, epoch_times, epoch, what):
             vtimer_4 = time.perf_counter()
             val_times["val_time_eval"].append(vtimer_4 - vtimer_3)
         epoch_times[f"val_times_{what}_e{epoch + 1}"] = val_times
-        etimer_2 = time.perf_counter()
-        epoch_times[f"epoch_time_validation_{what}"].append(etimer_2 - etimer_1)
         total_num_examples = torch.Tensor([total_num_examples]).cuda()
         top1_pred = torch.Tensor([top1_pred]).cuda()
         top5_pred = torch.Tensor([top5_pred]).cuda()
         loss /= (i+1)
         loss = torch.Tensor([loss]).cuda()
-        etimer_3 = time.perf_counter()
-        epoch_times[f"epoch_time_evaluation_{what}"].append(etimer_3 - etimer_2)
     return total_num_examples, loss, top1_pred, top5_pred, epoch_times
 
 

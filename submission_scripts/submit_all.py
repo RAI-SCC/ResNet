@@ -35,7 +35,7 @@ experiments = {"1g256l": dict([("RUNTIME", "90:00:00"), ("NNODES", "1"), ("LBS",
                "2g128l": dict([("RUNTIME", "48:00:00"), ("NNODES", "1"), ("LBS", "128"), ("TASKS", "2"), ("GPUs", "2")]),  # 40 h
                "4g64l": dict([("RUNTIME", "26:00:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4")]),  # 22 h
                "8g32l": dict([("RUNTIME", "14:00:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4")]),  # 12 h
-               "16g16l": dict([("RUNTIME", "8:00:00"), ("NNODES", "2"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4")])}  # 7 h
+               "16g16l": dict([("RUNTIME", "8:00:00"), ("NNODES", "4"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4")])}  # 7 h
 
 # timings
 experiments = {"256g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "64"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "2")]),
@@ -53,7 +53,7 @@ experiments = {"256g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "64"), ("LB
                "2g128l": dict([("RUNTIME", "1:20:00"), ("NNODES", "1"), ("LBS", "128"), ("TASKS", "2"), ("GPUs", "2"), ("EPOCHS", "2")]),
                "4g64l": dict([("RUNTIME", "00:25:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "2")]),
                "8g32l": dict([("RUNTIME", "00:20:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "2")]),
-               "16g16l": dict([("RUNTIME", "00:15:00"), ("NNODES", "2"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "2")])}
+               "16g16l": dict([("RUNTIME", "00:15:00"), ("NNODES", "4"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "2")])}
 
 epochs = 100
 for key in experiments:
