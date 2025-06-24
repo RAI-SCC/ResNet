@@ -22,6 +22,7 @@ def main():
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--subset_size", default=None, type=int, help='Size of Subset, i.e. number of Samples. If None, the full dataset is used')
+    parser.add_argument("--subset_factor", default=0, type=int, help='Factor (devisor) of Subset. If 0, the full dataset is used')
     parser.add_argument("--data_path", default="./", type=str, help='Path to data.')
     parser.add_argument("--batchsize", default=1, type=int, help='Global batch size.')
     parser.add_argument("--num_epochs", default=2, type=int, help='Number of epochs to be trained.')
@@ -62,7 +63,9 @@ def main():
         if args.seed is not None:
             print(f"Deterministic training is enabled")
         if args.subset_size is not None:
-            print(f"A data subset of {args.subset_size} samples ist used")
+            print(f"A data subset of {args.subset_size} samples in train is used")
+        if args.subset_fraction != 0:
+            print(f"A data subset with a fraction of {args.subset_fraction} in train and validation is used")
         print(f"{30*'-'} \n"
               f"CUDA Available: {torch.cuda.is_available()} \n"
               f"Number of GPUs: {world_size} \n"
@@ -86,6 +89,7 @@ def main():
         batch_size=args.batchsize,
         num_workers=args.num_workers,
         subset_size=args.subset_size,
+        subset_factor=args.subset_factor,
         path_to_data=args.data_path,
         seed_training=seed_training,
         seed=args.seed

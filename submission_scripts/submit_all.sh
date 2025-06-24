@@ -46,7 +46,12 @@ export LR_SCHEDULER="plateau"
 # Set paths
 export PYDIR=/hkfs/work/workspace/scratch/xy6660-ResImageNet/ResNet
 export EXP_BASE=/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments
-export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
+
+if [ "${SUBSET_FACTOR}" = "0" ]; then
+    export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
+else
+    export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e${SUBSET_FACTOR}sf
+fi
 mkdir -p ${EXP_TYPE}
 export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
 mkdir ${RESDIR}
@@ -70,4 +75,5 @@ srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
         perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py \
-        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --lr_scheduler ${LR_SCHEDULER} --seed ${RANDOM_SEED}"
+        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS}  \
+        --lr_scheduler ${LR_SCHEDULER} --seed ${RANDOM_SEED} --subset_factor ${SUBSET_FACTOR}"
