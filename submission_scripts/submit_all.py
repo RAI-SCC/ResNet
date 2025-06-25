@@ -56,25 +56,25 @@ experiments = {"256g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "64"), ("LB
                "16g16l": dict([("RUNTIME", "00:15:00"), ("NNODES", "4"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "2")])}
 
 # WS
-experiments = {"1g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1"), ("SUBSET_FACTOR", "256")]),
-               "2g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "2"), ("GPUs", "2"), ("SUBSET_FACTOR", "128")]),
-               "4g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "64")]),
-               "8g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "32")]),
-               "16g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "4"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "16")]),
-               "32g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "8")]),
-               "64g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
-               "128g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
+experiments_ws1 = {"1g256l": dict([("RUNTIME", "00:35:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1"), ("SUBSET_FACTOR", "256")]),
+                   "2g256l": dict([("RUNTIME", "00:35:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "2"), ("GPUs", "2"), ("SUBSET_FACTOR", "128")]),
+                   "4g256l": dict([("RUNTIME", "00:35:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "64")]),
+                   "8g256l": dict([("RUNTIME", "00:35:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "32")]),
+                   "16g256l": dict([("RUNTIME", "00:35:00"), ("NNODES", "4"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "16")]),
+                   "32g256l": dict([("RUNTIME", "00:40:00"), ("NNODES", "8"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "8")]),
+                   "64g256l": dict([("RUNTIME", "00:40:00"), ("NNODES", "16"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
+                   "128g256l": dict([("RUNTIME", "00:40:00"), ("NNODES", "32"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
 
-experiments = {"32g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "8")]),
-               "64g128l": dict([("RUNTIME", "01:00:00"), ("NNODES", "2"), ("LBS", "128"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
-               "128g64l": dict([("RUNTIME", "01:00:00"), ("NNODES", "2"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
+experiments_ws2 = {"32g256l": dict([("RUNTIME", "01:00:00"), ("NNODES", "8"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "8")]),
+                   "64g128l": dict([("RUNTIME", "01:00:00"), ("NNODES", "16"), ("LBS", "128"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
+                   "128g64l": dict([("RUNTIME", "01:00:00"), ("NNODES", "32"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
 
-experiments = {"1g256l": dict([("RUNTIME", "07:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1"), ("SUBSET_FACTOR", "16")]),
-               "2g128l": dict([("RUNTIME", "07:00:00"), ("NNODES", "1"), ("LBS", "128"), ("TASKS", "2"), ("GPUs", "2"), ("SUBSET_FACTOR", "8")]),
-               "4g64l": dict([("RUNTIME", "07:00:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
-               "8g32l": dict([("RUNTIME", "07:00:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
+experiments_ws3 = {"1g256l": dict([("RUNTIME", "07:00:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "1"), ("GPUs", "1"), ("SUBSET_FACTOR", "16")]),
+                   "2g128l": dict([("RUNTIME", "07:00:00"), ("NNODES", "1"), ("LBS", "128"), ("TASKS", "2"), ("GPUs", "2"), ("SUBSET_FACTOR", "8")]),
+                   "4g64l": dict([("RUNTIME", "07:00:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
+                   "8g32l": dict([("RUNTIME", "07:00:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
 
-experiments = {"4g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "64"), ("EPOCHS", "2")])}
+experiments = experiments_ws3
 
 for key in experiments:
     runtime = experiments[key]["RUNTIME"]
@@ -87,7 +87,7 @@ for key in experiments:
     else:
         epochs = "100"
     if "SUBSET_FACTOR" in experiments[key]:
-        subset_factor = experiments[key]["SUBSET_FACTOR"],
+        subset_factor = experiments[key]["SUBSET_FACTOR"]
     else:
         subset_factor = "0"
 

@@ -45,15 +45,15 @@ def create_subset(valid_dataset=None,
         np.random.seed(seed)
 
     train_targets = np.array(train_dataset.targets)
-    valid_targets = np.array(train_dataset.targets)
+    valid_targets = np.array(valid_dataset.targets)
     train_class_indices = defaultdict(list)
     valid_class_indices = defaultdict(list)
     total_size_train = len(train_targets)  # Total number of sampler in train
     total_size_valid = len(valid_targets)  # Total nNumber of sampler in valid
 
     if subset_factor != 0:
-        subset_size_train = total_size_train / subset_factor
-        subset_size_valid = total_size_valid / subset_factor
+        subset_size_train = int(total_size_train / subset_factor)
+        subset_size_valid = int(total_size_valid / subset_factor)
     else:
         subset_size_train = subset_size
         subset_size_valid = total_size_valid
@@ -101,7 +101,7 @@ def create_subset(valid_dataset=None,
 
     # Get indices for valid subset
     valid_indices = []
-    diff = subset_size_train - intermediate_size_valid
+    diff = subset_size_valid - intermediate_size_valid
     top_n = sorted(class_share_diff_valid.items(), key=lambda x: x[1], reverse=True)[:diff]
     for label in class_share_ints_valid:
         fraction = class_share_ints_valid[label]
@@ -111,6 +111,9 @@ def create_subset(valid_dataset=None,
     valid_indices = np.concatenate(valid_indices).tolist()
     valid_dataset_sub = torch.utils.data.Subset(valid_dataset, valid_indices)
 
+    if torch.distributed.get_rank() == 0:
+        print(f"Samples in training set: {len(train_indices)}")
+        print(f"Samples in validation set: {len(valid_indices)}")
     return train_dataset_sub, valid_dataset_sub
 
 

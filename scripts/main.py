@@ -60,12 +60,13 @@ def main():
     )
 
     if rank == 0:
+        print(f"{30*'-'} \n")
         if args.seed is not None:
             print(f"Deterministic training is enabled")
         if args.subset_size is not None:
             print(f"A data subset of {args.subset_size} samples in train is used")
-        if args.subset_fraction != 0:
-            print(f"A data subset with a fraction of {args.subset_fraction} in train and validation is used")
+        if args.subset_factor != 0:
+            print(f"A data subset with a fraction of 1/{args.subset_factor} in train and validation is used")
         print(f"{30*'-'} \n"
               f"CUDA Available: {torch.cuda.is_available()} \n"
               f"Number of GPUs: {world_size} \n"
