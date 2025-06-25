@@ -6,6 +6,7 @@
 #SBATCH --account=hk-project-p0021348
 #SBATCH --output="/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments/slurm_%j"
 #SBATCH --exclusive
+#SBATCH --exclude hkn[0416,0423,0506,0508,0602,0614,0615,0711,0807,0819,0821,0907,0915,0919]
 
 # Create input data on TMPDIR:
 date
@@ -46,7 +47,12 @@ export LR_SCHEDULER="plateau"
 # Set paths
 export PYDIR=/hkfs/work/workspace/scratch/xy6660-ResImageNet/ResNet
 export EXP_BASE=/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments
-export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
+
+if [ "${SUBSET_FACTOR}" = "0" ]; then
+    export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e
+else
+    export EXP_TYPE=${EXP_BASE}/${NUM_GPUS}g${LOCAL_BATCHSIZE}b${NUM_WORKERS}w${NUM_EPOCHS}e${SUBSET_FACTOR}sf
+fi
 mkdir -p ${EXP_TYPE}
 export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
 mkdir ${RESDIR}
@@ -58,16 +64,17 @@ PERUN_APP_NAME="perun"
 cd ${RESDIR}
 
 # arguments for the training:
-# --use_subset: optional. if used, then only small amount of data set is used in training for faster debugging
+# --use_factor: Devisor that reduces train and validation set. If 0, full dataset is used
 # --data_path: path to training, valid data
 # --batchsize: global batch size
 # --num_epochs: number of epochs the model will be trained
 # --seed: to enable deterministic training
 # --lr_scheduler: [cosine, plateau, multistep], choose learning rate scheduler
-# --subset_size: Size of Subset, i.e. number of Samples. If None, the full dataset is used
+# --subset_size: Size of train subset, i.e. number of Samples. If None, the full dataset is used
 
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
         perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py \
-        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS} --lr_scheduler ${LR_SCHEDULER} --seed ${RANDOM_SEED}"
+        --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS}  \
+        --lr_scheduler ${LR_SCHEDULER} --seed ${RANDOM_SEED} --subset_factor ${SUBSET_FACTOR}"
