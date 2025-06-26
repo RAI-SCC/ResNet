@@ -160,10 +160,17 @@ def eval_scaling(result_path, scaling_list, name):
         data[folder] = {}
         gpus = int(folder.split("g")[0])
         lbs = int((folder.split("b")[0]).split("g")[-1])
-        if 's' in folder:
-            nsamples =  int((folder.split("s")[0]).split("e")[-1])
+        if 'sf' in folder:
+            factor = int((folder.split("sf")[0]).split("e")[-1])
+            nsamples_train = int(n_images_train/factor)
+            nsamples_valid = int(n_images_valid / factor)
+        elif 's' in folder:
+            nsamples_train = int((folder.split("s")[0]).split("e")[-1])
+            nsamples_valid = n_images_valid
         else:
-            nsamples = n_images_train
+            nsamples_train = n_images_train
+            nsamples_valid = n_images_valid
+
         gbs = lbs * gpus
         nodes = gpus/4
         if nodes < 1:
@@ -171,7 +178,7 @@ def eval_scaling(result_path, scaling_list, name):
         data[folder]["gpus"] = gpus
         data[folder]["lbs"] = lbs
         data[folder]["gbs"] = gbs
-        data[folder]["nsamples"] = nsamples
+        data[folder]["nsamples"] = nsamples_train
         data[folder]["nodes"] = nodes
 
         for slurm_id in scaling_list[folder]:
