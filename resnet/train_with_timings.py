@@ -72,7 +72,7 @@ def get_right(model, data_loader, epoch_times, epoch, what):
     """
 
     val_times = {"val_time_dataloading": [], "val_time_data_to_device": [], "val_time_forward": [],
-                 "val_time_in-batch": [], "val_time_out-batch": [], "val_time_total": []}
+                 "val_time_in-batch_eval": [], "val_time_out-batch_eval": [], "val_time_total": []}
 
     with torch.no_grad():
         top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
@@ -98,7 +98,7 @@ def get_right(model, data_loader, epoch_times, epoch, what):
             val_times["val_time_dataloading"].append(vtimer_1 - vtimer_0)
             val_times["val_time_data_to_device"].append(vtimer_2 - vtimer_1)
             val_times["val_time_forward"].append(vtimer_3 - vtimer_2)
-            val_times["val_time_in-batch"].append(vtimer_4 - vtimer_3)
+            val_times["val_time_in-batch_eval"].append(vtimer_4 - vtimer_3)
             val_times["val_time_total"].append(vtimer_4 - vtimer_1)
             vtimer_0 = time.perf_counter()
         total_num_examples = torch.Tensor([total_num_examples]).cuda()
