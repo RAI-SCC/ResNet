@@ -6,7 +6,7 @@
 #SBATCH --account=hk-project-p0021348
 #SBATCH --output="/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments/slurm_%j"
 #SBATCH --exclusive
-#SBATCH --exclude hkn[0416,0423,0505,0506,0507,0508,0602,0614,0615,0632,0711,0807,0819,0821,0907,0915,0919]
+#SBATCH --exclude  hkn[0416,0423,0505,0506,0507,0508,0518,0520,0602,0603,0614,0615,0618,0626,0632,0711,0731,0807,0819,0821,0907,0915,0919]
 
 # Create input data on TMPDIR:
 date
