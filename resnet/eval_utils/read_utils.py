@@ -182,6 +182,45 @@ def get_power(
     return power, timesteps
 
 
+def get_cpu_freq(
+    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+) -> [np.array, np.array]:
+    """
+    Get cpu frequencies from corresponding hdf5 file provided by perun.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    h5_base_path: str
+        Internal path within hdf5 file.
+    num : int
+        Index of corresponding core
+    key : str
+        gou, cpu, or ram
+
+    Returns
+    _______
+    data : dict
+        Contains frequencies data saved as np.arrays.
+    """
+    if key == "cpu":
+        h5_path = f"{h5_base_path}"
+        cpu_freqs = {}
+        for name, _ in h5val[h5_path].items():
+            if key == "cpu" and "FREQ" in name:
+                num = int(name.split("_")[-1])
+                h5_val_path = f"{h5_base_path}/CPU_FREQ_{num}/raw_data/values"
+                h5_time_path = f"{h5_base_path}/CPU_FREQ_{num}/raw_data/timesteps"
+                vals = np.array(h5val[h5_val_path])
+                mag = float(h5val[h5_val_path].attrs["mag"])
+                freqs = vals * mag
+                timesteps = np.array(h5val[h5_time_path])
+                cpu_freq_single_device_mean = np.trapz(freqs, timesteps) / (timesteps[-1] - timesteps[0])
+                cpu_freqs[num] = cpu_freq_single_device_mean / 10**(9)  # in GHz
+    return cpu_freqs
+
+
 def get_gpu_mem(
     h5val=None, h5_gpu_base_path: str = None, num: int = None
 ) -> [np.array, np.array]:
@@ -278,12 +317,13 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
         power, timesteps = get_power(h5val, h5_path, num, key)
         if key == "gpu":
             mem, _ = get_gpu_mem(h5val, h5_path, num)
-            data[num]['memory'] = mem * 1024 ** 3  # B to GB
+            data[num]['memory'] = mem / (1024 ** 3)  # B to GB
         data[num]["util"], _ = get_utilization(h5val, h5_path, num, key)
         data[num]["power"] = power
         data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
         data[num]["timesteps"] = timesteps
-
+        #if key == "cpu":
+        #    data[num]["cpu_freqs"] = get_cpu_freq(h5val, h5_path, num, key)
     return data
 
 
@@ -310,3 +350,69 @@ def get_perun_data(h5val: h5py = None) -> dict:
         for key in keys:
             perun_data[node][key] = get_specific_data(h5val, h5_base_path, key)
     return perun_data
+
+
+def get_timings(h5val: h5py = None, data: dict = None, folder : str = None):
+    """
+    Evaluates the compute times of the training.
+
+    Parameters
+    ----------
+    h5val : h5py
+        Value vor hdf5 file with results
+    data : dict
+        Data.
+    folder : str
+        Experiment label.
+    """
+    gpus = data[folder]["gpus"]
+
+    batch_keys = ["batch_time_dataloading", "batch_time_data_to_device",
+                  "batch_time_forward", "batch_time_backward", "batch_time_total"]
+
+    valid_keys = ["val_time_dataloading", "val_time_data_to_device", "val_time_forward", "val_time_in-batch_eval",
+                  "val_time_out-batch_eval", "val_time_total"]
+
+    epoch_keys = ["epoch_time_init", "epoch_time_batches", "epoch_time_validate_train", "epoch_time_validate_valid",
+                  "epoch_time_allreduce", "epoch_time_evaluation", "epoch_time_prints",
+                  "epoch_time_step", "epoch_time_total"]
+
+    data[folder]["timings"] = {}
+    idx = 0
+    for n in range(gpus):
+        idx = idx + len(np.array(h5val[f"{n}/batch_times_e{1}/batch_time_total"]))
+    data[folder]["batch_iterations"] = int(idx/gpus)
+
+    for epoch in range(2):
+        data[folder]["timings"][epoch] = {}
+        data[folder]["timings"][epoch]["batch"] = {}
+        for key in batch_keys:
+            timings = 0
+            for n in range(gpus):
+                timings = timings + np.mean(np.array(h5val[f"{n}/batch_times_e{epoch+1}/{key}"]))
+            data[folder]["timings"][epoch]["batch"][key] = timings / gpus
+
+        # FIX BUG:
+        dataloading = data[folder]["timings"][epoch]["batch"]["batch_time_dataloading"]
+        time_data_to_device = data[folder]["timings"][epoch]["batch"]["batch_time_data_to_device"]
+        batch_time_forward = data[folder]["timings"][epoch]["batch"]["batch_time_forward"]
+        batch_time_backward = data[folder]["timings"][epoch]["batch"]["batch_time_backward"]
+        batch_time_total = data[folder]["timings"][epoch]["batch"]["batch_time_total"]
+        data[folder]["timings"][epoch]["batch"]["batch_time_step"] = batch_time_total
+        batch_time_total = batch_time_total + batch_time_backward + batch_time_forward + time_data_to_device + dataloading
+        data[folder]["timings"][epoch]["batch"]["batch_time_total"] = batch_time_total
+
+        data[folder]["timings"][epoch]["valid"] = {}
+        for key in valid_keys:
+            timings = 0
+            for n in range(gpus):
+                timings = timings + np.mean(np.array(h5val[f"{n}/val_times_valid_e{epoch+1}/{key}"]))
+            data[folder]["timings"][epoch]["valid"][key] = timings / gpus
+
+        data[folder]["timings"][epoch]["epoch"] = {}
+        for key in epoch_keys:
+            timings = 0
+            for n in range(gpus):
+                timings = timings + (np.array(h5val[f"{n}/{key}"]))[epoch]
+            data[folder]["timings"][epoch]["epoch"][key] = timings / gpus
+    return data
