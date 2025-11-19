@@ -47,6 +47,8 @@ def plot_scaling(result_path, data, scaling_list, name):
     y2_vals = []
     y2_rmse = []
     num_gpus = []
+    all_vals = {"folders": [], "gpus": [], "lbs": [], "gbs": [], "nsamples": [],
+                "mean_energy": [], "rmse_energy": [], "mean_gpuh": [], "rmse_gpuh": []}
 
     for folder in scaling_list:
         #y2_vals.append(data[folder]["mean"]["perun_time"])
@@ -54,6 +56,15 @@ def plot_scaling(result_path, data, scaling_list, name):
         #y2_rmse.append(data[folder]["rmse"]["perun_time"])
         y2_rmse.append(data[folder]["rmse"]["perun_gpu_h"])
         num_gpus.append(data[folder]["gpus"])
+        all_vals["gpus"].append(data[folder]["gpus"])
+        all_vals["lbs"].append(data[folder]["lbs"])
+        all_vals["gbs"].append(data[folder]["gbs"])
+        all_vals["nsamples"].append(data[folder]["nsamples"])
+        all_vals["folders"].append(folder)
+        all_vals["mean_gpuh"].append(data[folder]["mean"]["perun_gpu_h"])
+        all_vals["mean_energy"].append(data[folder]["mean"]["perun_energy"])
+        all_vals["rmse_gpuh"].append(data[folder]["rmse"]["perun_gpu_h"])
+        all_vals["rmse_energy"].append(data[folder]["rmse"]["perun_energy"])
 
         for key in energy_mean:
             lab = key+"_"
@@ -264,13 +275,100 @@ def plot_power(result_path, data, scaling_list, name):
     time_vals = []
     gpu_power_vals = []
     cpu_power_vals = []
+    ram_power_vals = []
+    gpu_energy_vals = []
+    cpu_energy_vals = []
+    ram_energy_vals = []
+    energy_vals = []
+    gpuh_vals = []
     num_gpus = []
+    nodes = []
+    lbs = []
+    gbs = []
+    e_times = []
+    samples = []
+    top1_error_valid = []
+
+    time_rmse = []
+    gpu_power_rmse = []
+    cpu_power_rmse = []
+    ram_power_rmse = []
+    gpu_energy_rmse = []
+    cpu_energy_rmse = []
+    ram_energy_rmse = []
+    energy_rmse = []
+    gpuh_rmse = []
+    e_times_rmse = []
+    top1_error_valid_rmse = []
 
     for folder in scaling_list:
         time_vals.append(data[folder]["mean"]["perun_time"])
         gpu_power_vals.append(data[folder]["mean"]["gpu_power_mean"])
         cpu_power_vals.append(data[folder]["mean"]["cpu_socket_power_mean"])
+        ram_power_vals.append(data[folder]["mean"]["ram_socket_power_mean"])
+        gpu_energy_vals.append(data[folder]["mean"]["perun_gpu_energy"])
+        cpu_energy_vals.append(data[folder]["mean"]["perun_cpu_energy"])
+        ram_energy_vals.append(data[folder]["mean"]["perun_ram_energy"])
+        energy_vals.append(data[folder]["mean"]["perun_energy"])
+        gpuh_vals.append(data[folder]["mean"]["perun_gpu_h"])
         num_gpus.append(data[folder]["gpus"])
+        lbs.append(data[folder]["lbs"])
+        gbs.append(data[folder]["gbs"])
+        samples.append(data[folder]["nsamples"])
+        e_times.append(float(np.mean(data[folder]["mean"]["epoch_times"])))
+        nodes.append(data[folder]["nodes"])
+        top1_error_valid.append(data[folder]["mean"]["top1_error_valid"])
+
+        time_rmse.append(data[folder]["rmse"]["perun_time"])
+        gpu_power_rmse.append(data[folder]["rmse"]["gpu_power_mean"])
+        cpu_power_rmse.append(data[folder]["rmse"]["cpu_socket_power_mean"])
+        ram_power_rmse.append(data[folder]["rmse"]["ram_socket_power_mean"])
+        gpu_energy_rmse.append(data[folder]["rmse"]["perun_gpu_energy"])
+        cpu_energy_rmse.append(data[folder]["rmse"]["perun_cpu_energy"])
+        ram_energy_rmse.append(data[folder]["rmse"]["perun_ram_energy"])
+        energy_rmse.append(data[folder]["rmse"]["perun_energy"])
+        gpuh_rmse.append(data[folder]["rmse"]["perun_gpu_h"])
+        e_times_rmse.append(float(np.mean(data[folder]["rmse"]["epoch_times"])))
+        top1_error_valid_rmse.append(data[folder]["rmse"]["top1_error_valid"])
+
+    ram_contribution = np.array(ram_energy_vals) / np.array(energy_vals)
+
+    print(name)
+    print(f'vals["resnet"]["{name}"]["label"] = "ResNet: GBS={gbs}, LBS={lbs}"')
+    print(f'vals["resnet"]["{name}"]["folders"] = {scaling_list}')
+    print(f'vals["resnet"]["{name}"]["gpus"] = {num_gpus}')
+    print(f'vals["resnet"]["{name}"]["lbs"] = {lbs}')
+    print(f'vals["resnet"]["{name}"]["gbs"] = "{gbs}')
+    print(f'vals["resnet"]["{name}"]["mean"]["energy"] = {energy_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["time"] = {time_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["Top-1"] = {top1_error_valid}')
+    print(f'vals["resnet"]["{name}"]["mean"]["gpuh"] = {gpuh_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["gpu_power"] = {gpu_power_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["cpu_power"] = {cpu_power_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["ram_power"] = {ram_power_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["samples"] = {samples}')
+    print(f'vals["resnet"]["{name}"]["mean"]["epoch_times"] = {e_times}')
+    print(f'vals["resnet"]["{name}"]["mean"]["gpu_energy"] = {gpu_energy_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["cpu_energy"] = {cpu_energy_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["ram_energy"] = {ram_energy_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["ram_contribution"] = {ram_contribution}')
+
+    print(name)
+    print(f'vals["resnet"]["{name}"]["rmse"]["energy"] = {energy_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["time"] = {time_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["Top-1"] = {top1_error_valid_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["gpuh"] = {gpuh_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["gpu_power"] = {gpu_power_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["cpu_power"] = {cpu_power_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["ram_power"] = {ram_power_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["epoch_times"] = {e_times_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["gpu_energy"] = {gpu_energy_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["cpu_energy"] = {cpu_energy_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["ram_energy"] = {ram_energy_rmse}')
+
+    print("SHARE", np.array(gpu_energy_vals) / np.array(energy_vals))
+
+
 
     target_path = Path(result_path, "figs", "mean_power_scaling")
     os.makedirs(target_path, exist_ok=True)
@@ -429,6 +527,11 @@ def plot_timings(result_path, data, scaling_list, name):
         # General
         num_gpus.append(data[folder]["gpus"])
 
+    print(f'vals["resnet"]["{name}"]["mean"]["forward_abs_times"] = {forward_abs}')
+    print(f'vals["resnet"]["{name}"]["mean"]["backward_abs_times"] = {backward_abs}')
+    print(f'vals["resnet"]["{name}"]["mean"]["forward_sum_times"] = {forward_sum}')
+    print(f'vals["resnet"]["{name}"]["mean"]["backward_sum_times"] = {backward_sum}')
+
     # General plot setup
     fs = 7
     bar_dist = 0.1  # the width of each bar
@@ -541,6 +644,7 @@ def plot_gpu_mem(result_path, data, scaling_list, name):
         for num, slurm_id in enumerate(scaling_list[folder]):
             if num > 0: break
             print(name, folder, slurm_id, data[folder][slurm_id]["gpu_power_mean"], data[folder]["rmse"]["gpu_power_mean"])
+
             for num_device, device in enumerate(data[folder][slurm_id]["gpu_power"]):
                 fig, ax1 = plt.subplots(figsize=(3.5, 2.0))
                 title = device.replace(".", "_")
@@ -564,8 +668,8 @@ def plot_gpu_mem(result_path, data, scaling_list, name):
                 last_time = time_vals[-1]
                 time_per_epoch = last_time / epochs
                 time_per_batch = time_per_epoch / nbatch_iter
-                eval_time = time_per_batch * 25 + 35
-                #eval_time = time_per_epoch * 2  + 35
+                #eval_time = time_per_batch * 25 + 35
+                eval_time = time_per_epoch * 4 + 35
                 size = time_vals[time_vals <= eval_time].shape[0]
 
                 ax1.plot(time_vals[:size], power_vals[:size], linestyle='-', color="C0", label="Power", lw=lw)
