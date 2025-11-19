@@ -197,7 +197,7 @@ def dataloader(batch_size: int = 32,
         worker_init_fn = worker_init_seed_fn
         generator = torch.Generator()
         generator.manual_seed(0)
-    
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size // torch.distributed.get_world_size(),

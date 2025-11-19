@@ -3,16 +3,15 @@
 #SBATCH --partition=accelerated
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
-#SBATCH --account=hk-project-p0021348
-#SBATCH --output="/hkfs/work/workspace/scratch/xy6660-ResImageNet/experiments/slurm_%j"
+#SBATCH --account=hk-project-test-p0025793_2
+#SBATCH --output="/hkfs/work/workspace/scratch/xy6660-ResNet/experiments/slurm_%j"
 #SBATCH --exclusive
 #SBATCH --exclude  hkn[0416,0423,0505,0506,0507,0508,0518,0520,0602,0603,0614,0615,0618,0626,0632,0711,0731,0807,0819,0821,0907,0915,0919]
 
 # Create input data on TMPDIR:
 date
 srun -N $SLURM_NNODES --ntasks-per-node=1 mkdir $TMPDIR/imagenet-2012
-srun -N $SLURM_NNODES --ntasks-per-node=1 tar -C $TMPDIR/imagenet-2012 -xf /hkfs/work/workspace/scratch/xy6660-ImageNet/imagenet-2012.tar
-ls $TMPDIR/imagenet-2012/CLS-LOC
+srun -N $SLURM_NNODES --ntasks-per-node=1 tar -C $TMPDIR/imagenet-2012 -xf $DATASETS/imagenet-2012/original/imagenet-raw/ILSVRC/Data/CLS-LOC
 date
 
 # Load modules
@@ -56,7 +55,7 @@ fi
 mkdir -p ${EXP_TYPE}
 export RESDIR=${EXP_TYPE}/${SLURM_JOB_ID}
 mkdir ${RESDIR}
-export DATA_PATH="$TMPDIR/imagenet-2012/CLS-LOC"
+export DATA_PATH="$TMPDIR/imagenet-2012/"
 
 PERUN_OUT="$RESDIR/perun"
 PERUN_APP_NAME="perun"

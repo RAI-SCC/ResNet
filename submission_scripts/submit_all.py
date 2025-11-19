@@ -88,7 +88,14 @@ experiments_ws3 = {"1g256l": dict([("RUNTIME", "05:40:00"), ("NNODES", "1"), ("L
                    "4g64l": dict([("RUNTIME", "06:00:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
                    "8g32l": dict([("RUNTIME", "06:30:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
 
-experiments = experiments_ws2
+exp_new_timings1 = {"64g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "16"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1")]),
+                    "32g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "8"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1")]),
+                    "16g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "4"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1")]),
+                    "8g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1")]),
+                    "4g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1")]),
+                    }
+
+experiments = exp_new_timings1
 
 for key in experiments:
     runtime = experiments[key]["RUNTIME"]
