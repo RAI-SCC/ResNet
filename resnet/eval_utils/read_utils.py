@@ -221,6 +221,35 @@ def get_cpu_freq(
     return cpu_freqs
 
 
+def get_cpu_util(
+    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+) -> [np.array, np.array]:
+    """
+    Get utilization data from corresponding hdf5 file provided by perun.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    h5_base_path: str
+        Internal path within hdf5 file.
+    num : int
+        Index of corresponding core
+    key : str
+        gou, cpu, or ram
+
+    Returns
+    _______
+    data : dict
+        Contains utilization data saved as np.arrays.
+    """
+    h5_val_path = f"{h5_base_path}/CPU_UTIL"
+    vals = float(h5val[h5_val_path].attrs["value"])
+    mag = float(h5val[h5_val_path].attrs["mag"])
+    cpu_util = vals * mag
+    return cpu_util
+
+
 def get_gpu_mem(
     h5val=None, h5_gpu_base_path: str = None, num: int = None
 ) -> [np.array, np.array]:
@@ -311,6 +340,7 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
     """
     data = {}
     h5_path = f"{h5_base_path}/{key}/nodes/"
+    h5_metric_path = "/".join(h5_base_path.split("/")[0:-1] + ["metrics"])
     cores = get_cores(h5val, h5_path, key=key)
     for num in cores:
         data[num] = {}  # Collects data for each core.
@@ -318,6 +348,8 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
         if key == "gpu":
             mem, _ = get_gpu_mem(h5val, h5_path, num)
             data[num]['memory'] = mem / (1024 ** 3)  # B to GB
+        if key == "cpu":
+            data[num]["cpu_util"] = get_cpu_util(h5val, h5_metric_path, num, key)
         data[num]["util"], _ = get_utilization(h5val, h5_path, num, key)
         data[num]["power"] = power
         data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)

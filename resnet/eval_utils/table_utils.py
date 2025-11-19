@@ -22,7 +22,7 @@ def rounded(val, position=0.01):
     return str(out_val)
 
 
-def make_table(result_path, data, scaling_list, name):
+def make_table_large(result_path, data, scaling_list, name):
 
     path = Path(result_path, name+"_table_all.txt")
 
@@ -119,9 +119,9 @@ def make_table(result_path, data, scaling_list, name):
             outf.write(line)
 
 
-def make_small_table(result_path, data, name):
+def make_table_small(result_path, data, name):
 
-    path = Path(result_path, name+"_table_small.txt")
+    path = Path(result_path, name+"_table_large.txt")
 
     with open(path, "w") as outf:
         print_list = ["GPUs",
@@ -182,7 +182,7 @@ def make_small_table(result_path, data, name):
             outf.write(line)
 
 
-def make_table_with_eff(result_path, data, name):
+def make_table_small(result_path, data, name):
 
     path = Path(result_path, name+"_table_small.txt")
 
@@ -192,15 +192,10 @@ def make_table_with_eff(result_path, data, name):
                       "GBS",
                       "Samples",
                       "Energy",
-                      " ",
                       "Energy/node",
-                      " ",
                       "Runtime",
-                      " ",
                       "GPU hours",
-                      " ",
                       "Top1 Error",
-                      " ",
                       ]
         line = " & ".join(print_list)
         line = line + "\\\\ \n"
@@ -210,15 +205,10 @@ def make_table_with_eff(result_path, data, name):
                       " ",
                       " ",
                       "[kWh]",
-                      " ",
                       "[kWh]",
-                      " ",
                       "[min]",
-                      " ",
                       "[h]",
-                      " ",
                       "[\\%]",
-                      " ",
                       ]
         line = " & ".join(print_list)
         line = line + "\\\\ \n"
@@ -243,27 +233,93 @@ def make_table_with_eff(result_path, data, name):
             rmse_top1_error_valid = data[experiment]["rmse"]["top1_error_valid"]
             rmse_perun_energy_per_node = data[experiment]["rmse"]["perun_energy_per_node"]
 
-            eff_perun_energy = data[experiment]["efficiency"]["perun_energy"]
-            eff_perun_energy_per_node = data[experiment]["efficiency"]["perun_energy_per_node"]
-            eff_perun_time = data[experiment]["efficiency"]["perun_time"]
-            eff_perun_gpu_h = data[experiment]["efficiency"]["perun_gpu_h"]
-            eff_top1_error_valid = data[experiment]["efficiency"]["top1_error_valid"]
-
             print_list = [str(gpus),
                           str(lbs),
                           str(gbs),
                           str(nsamples),
                           rounded(mean_perun_energy) + " $\pm$ " + rounded(rmse_perun_energy),
-                          rounded(eff_perun_energy),
                           rounded(mean_perun_energy_per_node) + " $\pm$ " + rounded(rmse_perun_energy_per_node),
-                          rounded(eff_perun_energy_per_node),
                           rounded(mean_perun_time) + " $\pm$ " + rounded(rmse_perun_time),
-                          rounded(eff_perun_time),
                           rounded(mean_perun_gpu_h) + " $\pm$ " + rounded(rmse_perun_gpu_h),
-                          rounded(eff_perun_gpu_h),
                           rounded(mean_top1_error_valid),  # + " $\pm$ " + rounded(rmse_top1_error_valid),
-                          rounded(eff_top1_error_valid),
                           ]
+            line = " & ".join(print_list)
+            line = line + "\\\\ \n"
+            outf.write(line)
+
+
+def make_table_es(result_path, data, name):
+
+    path = Path(result_path, "tables", name+"_energies_.txt")
+
+    with open(path, "w") as outf:
+        print_list = ["GPUs",
+                      "LBS",
+                      "GBS",
+                      "E(RAM)",
+                      "E(CPU)",
+                      "E(GPU)",
+                      "E(total)",
+                      "GPUh",
+                      "E/GPUh",
+                      "P(RAM)",
+                      "P(CPU)",
+                      "P(GPU)",
+                      "Mem(GPU)",
+                      ]
+        line = " & ".join(print_list)
+        line = line + "\\\\ \n"
+        outf.write(line)
+        print_list = [" ",
+                      " ",
+                      " ",
+                      "[kWh]",
+                      "[kWh]",
+                      "[kWh]",
+                      "[kWh]",
+                      "[h]",
+                      "[kWh/h]",
+                      "[W]",
+                      "[W]",
+                      "[W]",
+                      "[GB]",
+                      ]
+        line = " & ".join(print_list)
+        line = line + "\\\\ \n"
+        outf.write(line)
+        outf.write("\\midrule \n")
+
+        for experiment in data:
+            gpus = data[experiment]["gpus"]
+            lbs = data[experiment]["lbs"]
+            gbs = data[experiment]["gbs"]
+
+            e_ram = data[experiment]["mean"]["perun_ram_energy"]
+            e_cpu = data[experiment]["mean"]["perun_cpu_energy"]
+            e_gpu = data[experiment]["mean"]["perun_gpu_energy"]
+            e_total = data[experiment]["mean"]["perun_energy"]
+            gpu_h = data[experiment]["mean"]["perun_gpu_h"]
+            e_per_gpu_h = e_total / gpu_h
+            p_ram = data[experiment]["mean"]["ram_socket_power_mean"]
+            p_cpu = data[experiment]["mean"]["cpu_socket_power_mean"]
+            p_gpu = data[experiment]["mean"]["gpu_power_mean"]
+            gpu_mem = data[experiment]["mean"]["gpu_mem_mean"]
+
+            print_list = [str(gpus),
+                          str(lbs),
+                          str(gbs),
+                          rounded(e_ram),
+                          rounded(e_cpu),
+                          rounded(e_gpu),
+                          rounded(e_total),
+                          rounded(gpu_h),
+                          rounded(e_per_gpu_h),
+                          rounded(p_ram),
+                          rounded(p_cpu),
+                          rounded(p_gpu),
+                          rounded(gpu_mem),
+                          ]
+
             line = " & ".join(print_list)
             line = line + "\\\\ \n"
             outf.write(line)

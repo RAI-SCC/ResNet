@@ -9,18 +9,18 @@ from resnet.eval_utils.read_utils import print_attrs
 # result_path = Path("/home/scc/xy6660/ResNet/ResNet/experiments/")
 result_path = Path("/Users/philipphuber/Documents/Projects/ResNet/experiments/")
 
-large_ss_const_gbs_list = {"32g256b4w100e": ["3172377", "3172802", "3173813", "3175067", "3179925"],
+resnet_cds_gbs_8192 = {"32g256b4w100e": ["3172377", "3172802", "3173813", "3175067", "3179925"],
                      "64g128b4w100e": ["3172777", "3172801", "3173812", "3175066", "3179924"],
                      "128g64b4w100e": ["3172774", "3172799", "3173810", "3175064", "3179922"],
                      "256g32b4w100e": ["3172773", "3172797", "3173808", "3175062", "3179920"]}
 
-small_ss_const_gbs_list = {"1g256b4w100e": ["3226704", "3226705", "3226706", "3226707", "3226708"],
+resnet_cds_gbs_256 = {"1g256b4w100e": ["3226704", "3226705", "3226706", "3226707", "3226708"],
                            "2g128b4w100e": ["3211174", "3215288", "3216341", "3217900", "3239757"],
                            "4g64b4w100e": ["3211175", "3215289", "3216342", "3217901", "3219598"],
                            "8g32b4w100e": ["3211176", "3215290", "3216343", "3217902", "3219599"],
                            "16g16b4w100e": ["3211177", "3215291", "3216344", "3217903", "3219600"]}
 
-ss_const_lbs_list = {"1g256b4w100e": ["3226704", "3226705", "3226706", "3226707", "3226708"],
+resnet_cds_lbs_256 = {"1g256b4w100e": ["3226704", "3226705", "3226706", "3226707", "3226708"],
                      "2g256b4w100e": ["3211178", "3215283", "3216346", "3217896", "3219605"],
                      "4g256b4w100e": ["3211179", "3211179", "3216347", "3217897", "3219606"],
                      "8g256b4w100e": ["3211180", "3215285", "3216348", "3217898", "3219607"],
@@ -51,7 +51,7 @@ ss_const_lbs_list = {"1g256b4w100e": ["3226704", "3226705", "3226706", "3226707"
 #                           "128g64b4w100e327680s": ["3224920", "3231342", "3231348", "3231351", "3239740"],
 #                           "256g32b4w100e655360s": ["3224919", "3234209", "3234210", "3234211", "3234212"]}
 
-large_ws_const_lbs_list = {"1g256b4w100e256sf": ["3290601", "3290991", "3292881", "3292892", "3294277"],
+resnet_sgpu_5004_lbs_256 = {"1g256b4w100e256sf": ["3290601", "3290991", "3292881", "3292892", "3294277"],
                            "2g256b4w100e128sf": ["3290992", "3292882", "3292893", "3294278", "3294288"],
                            "4g256b4w100e64sf": ["3290603", "3290993", "3292883", "3292894", "3294279"],
                            "8g256b4w100e32sf": ["3290994", "3292884", "3292895", "3294280", "3294289"],
@@ -61,23 +61,23 @@ large_ws_const_lbs_list = {"1g256b4w100e256sf": ["3290601", "3290991", "3292881"
                            "128g256b4w100e2sf": ["3292888", "3292899", "3294302", "3300304", "3300305"],
                            "256g256b4w100e": ["3167090", "3172796", "3173807", "3175061", "3179919"]}
 
-small_ws_const_gbs_list = {"1g256b4w100e16sf": ["3290594", "3291002", "3292874", "3292903", "3294271"],
+resnet_sgpu_80072_gbs_256 = {"1g256b4w100e16sf": ["3290594", "3291002", "3292874", "3292903", "3294271"],
                            "2g128b4w100e8sf": ["3291003", "3292875", "3292904", "3294272", "3294295"],
                            "4g64b4w100e4sf": ["3290596", "3291004", "3292876", "3292905", "3294273"],
                            "8g32b4w100e2sf": ["3290597", "3291005", "3292877", "3292906", "3294274"],
                            "16g16b4w100e": ["3211177", "3215291", "3216344", "3217903", "3219600"]}
 
-large_ws_const_gbs_list = {"32g256b4w100e8sf": ["3290996", "3290999", "3292878", "3292886", "3292897"],  # "3292900"],
+resnet_sgpu_5004_gbs_8192 = {"32g256b4w100e8sf": ["3290996", "3290999", "3292878", "3292886", "3292897"],  # "3292900"],
                            "64g128b4w100e4sf": ["3291000", "3292879", "3292901", "3298220", "3298222"],
                            "128g64b4w100e2sf": ["3292880", "3294300", "3300300", "3300301", "3301974"],
                            "256g32b4w100e": ["3172773", "3172797", "3173808", "3175062", "3179920"]}
 
-eval_scaling(result_path=result_path, scaling_list=large_ss_const_gbs_list, name="resnet_ss_gbs-k8")
-eval_scaling(result_path=result_path, scaling_list=small_ss_const_gbs_list, name="resnet_ss_gbs-256")
-eval_scaling(result_path=result_path, scaling_list=ss_const_lbs_list, name="resnet_ss_lbs-256")
-eval_scaling(result_path=result_path, scaling_list=large_ws_const_lbs_list, name="resnet_ws_lbs-256")
-eval_scaling(result_path=result_path, scaling_list=large_ws_const_gbs_list, name="resnet_ws_gbs-256")
-eval_scaling(result_path=result_path, scaling_list=small_ws_const_gbs_list, name="resnet_ws_gbs-8k")
+eval_scaling(result_path=result_path, scaling_list=resnet_cds_gbs_8192, name="resnet_cds_gbs_8192")
+eval_scaling(result_path=result_path, scaling_list=resnet_cds_gbs_256, name="resnet_cds_gbs_256")
+eval_scaling(result_path=result_path, scaling_list=resnet_cds_lbs_256, name="resnet_cds_lbs_256")
+eval_scaling(result_path=result_path, scaling_list=resnet_sgpu_5004_lbs_256, name="resnet_sgpu_5004_lbs_256")
+eval_scaling(result_path=result_path, scaling_list=resnet_sgpu_5004_gbs_8192, name="resnet_sgpu_5004_gbs_8192")
+eval_scaling(result_path=result_path, scaling_list=resnet_sgpu_80072_gbs_256, name="resnet_sgpu_80072_gbs_256")
 
 #plot_top1(result_path, constant_gbs_list, name="resnet_constant_gbs", key="constant_gbs")
 #plot_top1(result_path, constant_lbs_list, name="resnet_constant_lbs", key="constant_lbs")
