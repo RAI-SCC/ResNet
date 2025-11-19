@@ -144,6 +144,70 @@ def get_utilization(
     return power, timesteps
 
 
+def get_gpu_freq(
+    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+) -> [np.array, np.array]:
+    """
+    Get gpu frequencies from corresponding hdf5 file provided by perun.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    h5_base_path: str
+        Internal path within hdf5 file.
+    num : int
+        Index of corresponding core
+    key : str
+        gou, cpu, or ram
+
+    Returns
+    _______
+    data : dict
+        Contains utilization data saved as np.arrays.
+    """
+    if key == "gpu":
+        h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/values"
+        h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/timesteps"
+    vals = np.array(h5val[h5_val_path])
+    mag = float(h5val[h5_val_path].attrs["mag"])
+    util = vals * mag
+    timesteps = np.array(h5val[h5_time_path])
+    return util, timesteps
+
+
+def get_gpu_sm(
+    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+) -> [np.array, np.array]:
+    """
+    Get gpu sm from corresponding hdf5 file provided by perun.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    h5_base_path: str
+        Internal path within hdf5 file.
+    num : int
+        Index of corresponding core
+    key : str
+        gou, cpu, or ram
+
+    Returns
+    _______
+    data : dict
+        Contains utilization data saved as np.arrays.
+    """
+    if key == "gpu":
+        h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/values"
+        h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/timesteps"
+    vals = np.array(h5val[h5_val_path])
+    mag = float(h5val[h5_val_path].attrs["mag"])
+    sm = vals * mag
+    timesteps = np.array(h5val[h5_time_path])
+    return sm, timesteps
+
+
 def get_power(
     h5val=None, h5_base_path: str = None, num: int = None, key: str = None
 ) -> [np.array, np.array]:
@@ -348,6 +412,10 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
         if key == "gpu":
             mem, _ = get_gpu_mem(h5val, h5_path, num)
             data[num]['memory'] = mem / (1024 ** 3)  # B to GB
+            freq, _ = get_gpu_freq(h5val, h5_path, num, key)
+            data[num]["freq"] = freq * 10 ** 6  # Hz to MHz
+            sm, _ = get_gpu_sm(h5val, h5_path, num, key)
+            data[num]["sm"] = sm / 10 ** 6
         if key == "cpu":
             data[num]["cpu_util"] = get_cpu_util(h5val, h5_metric_path, num, key)
         data[num]["util"], _ = get_utilization(h5val, h5_path, num, key)
