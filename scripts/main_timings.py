@@ -4,21 +4,17 @@ import random
 import argparse
 import socket
 
-from perun import monitor
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau, CosineAnnealingLR, MultiStepLR
 
 from resnet.model import ResNet
-from resnet.train import train_model, warmup_goyal_fn
-from resnet.dataloader_timings import dataloader
+from resnet.train_with_timings import train_model, warmup_goyal_fn
+from resnet.dataloader import dataloader
 
 
-@monitor()
 def main():
-    #  Adjust hyperparameters:
-    #  num_worker, batch size, epochs, ResNet size
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--subset_size", default=None, type=int,
@@ -31,6 +27,7 @@ def main():
     parser.add_argument("--lr_scheduler", default="plateau", type=str, choices=["cosine", "plateau", "multistep"],
                         help="Choose learning rate scheduler (cosine, plateau, multistep).")
     parser.add_argument('--seed', default=None, type=int, help='seed for initializing training')
+    parser.add_argument('--batch_iter', default=0, type=int, help='Maximum number of batch iterations per epoch. If 0, this value is ignored.')
     args = parser.parse_args()
 
     seed_training = False
@@ -39,24 +36,24 @@ def main():
         torch.manual_seed(args.seed)
         torch.cuda.manual_seed(args.seed)
         torch.cuda.manual_seed_all(args.seed)
-        torch.backends.cudnn.deterministic = True  # Ensures deterministic behavior
+        torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         seed_training = True
 
     start_time = time.perf_counter()
 
-    # Distributed set up.
-    world_size = int(os.getenv("SLURM_NPROCS"))  # Get overall number of processes.
-    rank = int(os.getenv("SLURM_PROCID"))  # Get individual process ID.
+    # Distributed set up
+    world_size = int(os.getenv("SLURM_NPROCS"))  
+    rank = int(os.getenv("SLURM_PROCID")) 
     hostname = socket.gethostname()
-    slurm_localid = int(os.getenv("SLURM_LOCALID"))  # Get local process ID.
+    slurm_localid = int(os.getenv("SLURM_LOCALID")) 
     gpus_per_node = torch.cuda.device_count()
     gpu = rank % gpus_per_node
     assert gpu == slurm_localid
     device = f"cuda:{slurm_localid}"
     torch.cuda.set_device(device)
 
-    # Initialize DDP.
+    # Initialize DDP
     dist.init_process_group(
         backend="nccl", rank=rank, world_size=world_size, init_method="env://"
     )
@@ -69,6 +66,8 @@ def main():
             print(f"A data subset of {args.subset_size} samples in train is used")
         if args.subset_factor != 0:
             print(f"A data subset with a fraction of 1/{args.subset_factor} in train and validation is used")
+        if args.batch_iter !=0:
+            print(f"A maximum number of {args.batch_iter} batch iterations applied")
         print(f"{30 * '-'} \n"
               f"CUDA Available: {torch.cuda.is_available()} \n"
               f"Number of GPUs: {world_size} \n"
@@ -87,7 +86,7 @@ def main():
         print(f"Batch Size: {args.batchsize}")
         print(f"Max Epoch: {args.num_epochs}")
 
-    # Get distributed dataloaders on all ranks.
+    # Get distributed dataloaders on all ranks
     train_loader, valid_loader = dataloader(
         batch_size=args.batchsize,
         num_workers=args.num_workers,
@@ -98,8 +97,8 @@ def main():
         seed=args.seed
     )
 
-    model = ResNet().to(device)  # Create model and move it to GPU with id rank.
-    model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)  # Wrap model with DDP.
+    model = ResNet().to(device) 
+    model = DDP(model, device_ids=[slurm_localid], output_device=slurm_localid)
     reference_lr = 0.1
     optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=reference_lr, weight_decay=0.0001)
 
@@ -124,7 +123,7 @@ def main():
     else:
         raise ValueError(f"Unknown lr scheduler: {args.lr_scheduler}")
 
-    # Train model.
+    # Train model
     valid_loss_history, train_acc_history, valid_acc_history, lr_history, time_history = train_model(
         model=model,
         num_epochs=args.num_epochs,
@@ -134,12 +133,13 @@ def main():
         start_time=start_time,
         warmup_scheduler=warmup_scheduler,
         lr_scheduler=lr_scheduler,
-        warmup_epochs=warmup_epochs
+        warmup_epochs=warmup_epochs,
+        batch_iter=args.batch_iter
     )
 
     dist.destroy_process_group()
 
 
-# MAIN STARTS HERE.
+# Main starts here
 if __name__ == "__main__":
     main()
