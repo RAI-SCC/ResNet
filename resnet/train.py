@@ -1,7 +1,9 @@
 import time
+import pickle
+import itertools
 
 import torch
-from perun import monitor
+import h5py
 
 
 def warmup_goyal_fn(epoch, batchsize, warmup_epochs, reference_lr):
@@ -92,17 +94,17 @@ def get_right(model, data_loader):
     return total_num_examples, loss, top1_pred, top5_pred
 
 
-@monitor()
 def train_model(
-        model,
-        num_epochs,
-        train_loader,
-        valid_loader,
-        optimizer,
-        start_time,
-        warmup_scheduler,
-        lr_scheduler,
-        warmup_epochs=0
+    model,
+    num_epochs,
+    train_loader,
+    valid_loader,
+    optimizer,
+    start_time,
+    warmup_scheduler,
+    lr_scheduler,
+    warmup_epochs=0,
+    batch_iter=0
 ):
     """
     Train model in DDP fashion.
@@ -110,15 +112,15 @@ def train_model(
     Parameters
     __________
     model : torch.nn.Module
-        model to train
+        Model to train
     num_epochs : int
-        number of epochs to train
+        Number of epochs to train
     train_loader : torch.utils.data.Dataloader
-        training dataloader
+        Training dataloader
     valid_loader : torch.utils.data.Dataloader
-        validation dataloader
+        Validation dataloader
     optimizer : torch.optim.Optimizer
-        optimizer to use
+        Optimizer to use
     start_time : float
         Start time of main
     warmup_scheduler :
@@ -126,7 +128,9 @@ def train_model(
     lr_scheduler :
         LR scheduler
     warmup_epochs : int
-        num of epochs for lr get reach target value
+        Num of epochs for lr get reach target value
+    batch_iter: int
+        Maximum number of batch iterations per epoch
 
     Returns
     _______
@@ -145,92 +149,135 @@ def train_model(
     rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()
 
-    (valid_loss_history, train_loss_history, time_history, lr_history) = [], [], [], []
+    (valid_loss_history, train_loss_history, epoch_time_history, lr_history) = [], [], [], []
     (top1_acc_train_history, top5_acc_train_history) = [], []
     (top1_acc_valid_history, top5_acc_valid_history) = [], []
 
     if rank == 0:
         print("Start Training")
-        print(40 * "-")
+        print(40*"-")
+
+    epoch_times = {}
 
     for epoch in range(num_epochs):  # Loop over epochs.
         train_loader.sampler.set_epoch(epoch)
         model.train()  # Set model to training mode.
 
-        for batch_idx, (features, targets) in enumerate(train_loader):  # Loop over mini batches.
+        batch_times = {"batch_time_dataloading": [], "batch_time_data_to_device": [], "batch_time_forward": [],
+                       "batch_time_backward": [], "batch_time_total": []}
+
+        if batch_iter == 0:
+            n_train_batches=len(train_loader)
+        else:
+            n_train_batches = batch_iter
+        btimer_0 = time.perf_counter()
+        for batch_idx, (features, targets) in enumerate(itertools.islice(train_loader, n_train_batches)):  # Loop over mini batches.
             # Data to GPUs
+            btimer_1 = time.perf_counter()
             features = features.cuda()
             targets = targets.cuda()
+            btimer_2 = time.perf_counter()
             # Forward and backward pass.
             output = model(features)
+            btimer_3 = time.perf_counter()
             loss = torch.nn.functional.cross_entropy(output, targets)
             optimizer.zero_grad()
+            btimer_4 = time.perf_counter()
             loss.backward()
+            btimer_5 = time.perf_counter()
             optimizer.step()
+            btimer_6 = time.perf_counter()
+            batch_times["batch_time_dataloading"].append(btimer_1 - btimer_0)
+            batch_times["batch_time_data_to_device"].append(btimer_2 - btimer_1)
+            batch_times["batch_time_forward"].append(btimer_3 - btimer_2)
+            batch_times["batch_time_backward"].append(btimer_5 - btimer_4)
+            batch_times["batch_time_total"].append(btimer_6 - btimer_0)
+            btimer_0 = time.perf_counter()
 
-        model.eval()  # Set model to evaluation mode.
+        epoch_times[f"batch_times_e{epoch + 1}"] = batch_times
 
-        with torch.no_grad():  # Disable gradient calculation.
-            # Get rank-local numbers of correctly classified and overall samples in training and validation set.
-            num_train, train_loss, top1_pred_train, top5_pred_train = get_right(model, train_loader)
-            num_valid, valid_loss, top1_pred_valid, top5_pred_valid = get_right(model, valid_loader)
-            # Allreduce rank-local numbers of correctly classified and overall training and validation samples.
-            torch.distributed.all_reduce(top1_pred_train)
-            torch.distributed.all_reduce(top5_pred_train)
-            torch.distributed.all_reduce(top1_pred_valid)
-            torch.distributed.all_reduce(top5_pred_valid)
-            torch.distributed.all_reduce(num_train)
-            torch.distributed.all_reduce(num_valid)
-            torch.distributed.all_reduce(valid_loss)
-            torch.distributed.all_reduce(train_loss)
-            # Calculate correct values
-            time_elapsed = (time.perf_counter() - start_time) / 60
-            top1_acc_train = top1_pred_train.item() / num_train.item() * 100
-            top5_acc_train = top5_pred_train.item() / num_train.item() * 100
-            top1_acc_valid = top1_pred_valid.item() / num_valid.item() * 100
-            top5_acc_valid = top5_pred_valid.item() / num_valid.item() * 100
-            valid_loss = valid_loss.item() / world_size
-            train_loss = train_loss.item() / world_size
-            # append to history
-            valid_loss_history.append(valid_loss)
-            train_loss_history.append(train_loss)
-            top1_acc_train_history.append(top1_acc_train)
-            top5_acc_train_history.append(top5_acc_train)
-            top1_acc_valid_history.append(top1_acc_valid)
-            top5_acc_valid_history.append(top5_acc_valid)
-            time_history.append(time_elapsed)
-            lr_history.append(optimizer.state_dict()['param_groups'][0]['lr'])
+        if batch_iter == 0:
+            model.eval()  # Set model to evaluation mode.
+            with torch.no_grad():  # Disable gradient calculation.
+                # Get rank-local numbers of correctly classified and overall samples in training and validation set.
+                num_train, train_loss, top1_pred_train, top5_pred_train = get_right(model, train_loader)
+                num_valid, valid_loss, top1_pred_valid, top5_pred_valid = get_right(model, valid_loader)
+                # Allreduce rank-local numbers of correctly classified and overall training and validation samples.
+                torch.distributed.all_reduce(top1_pred_train)
+                torch.distributed.all_reduce(top5_pred_train)
+                torch.distributed.all_reduce(top1_pred_valid)
+                torch.distributed.all_reduce(top5_pred_valid)
+                torch.distributed.all_reduce(num_train)
+                torch.distributed.all_reduce(num_valid)
+                torch.distributed.all_reduce(valid_loss)
+                torch.distributed.all_reduce(train_loss)
+                # Calculate correct values
+                time_elapsed = (time.perf_counter() - start_time) / 60
+                top1_acc_train = top1_pred_train.item() / num_train.item() * 100
+                top5_acc_train = top5_pred_train.item() / num_train.item() * 100
+                top1_acc_valid = top1_pred_valid.item() / num_valid.item() * 100
+                top5_acc_valid = top5_pred_valid.item() / num_valid.item() * 100
+                valid_loss = valid_loss.item() / world_size
+                train_loss = train_loss.item() / world_size
+                # append to history
+                valid_loss_history.append(valid_loss)
+                train_loss_history.append(train_loss)
+                top1_acc_train_history.append(top1_acc_train)
+                top5_acc_train_history.append(top5_acc_train)
+                top1_acc_valid_history.append(top1_acc_valid)
+                top5_acc_valid_history.append(top5_acc_valid)
+                epoch_time_history.append(time_elapsed)
+                lr_history.append(optimizer.state_dict()['param_groups'][0]['lr'])
 
-            if rank == 0:
-                print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
-                      f'| Validation Loss: {valid_loss:.4f} '
-                      f'| Training Loss: {train_loss:.4f} '
-                      f'| Top1-Train: {top1_acc_train :.2f}% '
-                      f'| Top1-Validation: {top1_acc_valid :.2f}% '
-                      f'| Top5-Train: {top5_acc_train :.2f}% '
-                      f'| Top5-Validation: {top5_acc_valid :.2f}% '
-                      f'| LR: {optimizer.state_dict()["param_groups"][0]["lr"] :.6f} '
-                      f'| Time: {time_elapsed :.2f} min')
+                if rank == 0:
+                    print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
+                          f'| Validation Loss: {valid_loss:.4f} '
+                          f'| Training Loss: {train_loss:.4f} '
+                          f'| Top1-Train: {top1_acc_train :.2f}% '
+                          f'| Top1-Validation: {top1_acc_valid :.2f}% '
+                          f'| Top5-Train: {top5_acc_train :.2f}% '
+                          f'| Top5-Validation: {top5_acc_valid :.2f}% '
+                          f'| LR: {optimizer.state_dict()["param_groups"][0]["lr"] :.6f} '
+                          f'| Time: {time_elapsed :.2f} min')
 
-            # Scheduler Step
-            if epoch < warmup_epochs:
-                warmup_scheduler.step()
-            else:
-                if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    lr_scheduler.step(valid_loss)
+                # Scheduler Step
+                if epoch < warmup_epochs:
+                    warmup_scheduler.step()
                 else:
-                    lr_scheduler.step()
+                    if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                        lr_scheduler.step(valid_loss)
+                    else:
+                        lr_scheduler.step()
+
+    local_dict = epoch_times
+    gathered_times = {}
+    torch.distributed.all_gather_object(gathered_times, local_dict)
 
     if rank == 0:
-        torch.save(train_loss_history, f'train_loss.pt')
-        torch.save(valid_loss_history, f'valid_loss.pt')
-        torch.save(top1_acc_train_history, f'train_top1.pt')
-        torch.save(top1_acc_valid_history, f'valid_top1.pt')
-        torch.save(top5_acc_train_history, f'train_top5.pt')
-        torch.save(top5_acc_valid_history, f'valid_top5.pt')
-        torch.save(time_history, f'time.pt')
-        torch.save(lr_history, f'lr.pt')
-        torch.save({'epoch': epoch, 'model_state': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
+        if batch_iter == 0:
+            torch.save(train_loss_history, f'train_loss.pt')
+            torch.save(valid_loss_history, f'valid_loss.pt')
+            torch.save(top1_acc_train_history, f'train_top1.pt')
+            torch.save(top1_acc_valid_history, f'valid_top1.pt')
+            torch.save(top5_acc_train_history, f'train_top5.pt')
+            torch.save(top5_acc_valid_history, f'valid_top5.pt')
+            torch.save(epoch_time_history, f'epoch_times.pt')
+            torch.save(lr_history, f'lr.pt')
+            torch.save({'epoch': epoch, 'model_state': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict()}, "ckpt.tar")
+        else:
+            with h5py.File('times.h5', 'w') as h5f:
+                for key1, val1 in gathered_times.items():
+                    # Create node groups
+                    h5f.create_group(f"{key1}")
+                    for key2, val2 in gathered_times[key1].items():
+                        # Create batch groups
+                        if isinstance(val2, dict):
+                            h5f.create_group(f"{key1}/{key2}")
+                            for key3, val3 in gathered_times[key1][key2].items():
+                                h5f[f"{key1}/{key2}/{key3}"] = val3
+                        # write epoch items
+                        else:
+                            h5f[f"{key1}/{key2}"] = val2
 
-    return valid_loss_history, top1_acc_train_history, top1_acc_valid_history, lr_history, time_history
+    return valid_loss_history, top1_acc_train_history, top1_acc_valid_history, lr_history, epoch_time_history
