@@ -24,8 +24,8 @@ pip install -e .
 
 ### Energy Consumption During Training
 
-Two approaches of scaling experiments were performed: Maintaining a constant dataset size during increasing the GPU count and a linearly increasing dataset size with increasing GPU count.
-For both, the GBS or LBS was scaled during scaling the GPU count.
+Two approaches of scaling experiments were performed: Maintaining a constant dataset size while increasing the GPU count and a linearly increasing dataset size with increasing GPU count.
+For both, the GBS or LBS was scaled while scaling the GPU count.
 The training time, Top1 error, and energy consumption were tracked.
 
 ### Time Profiling of Training Phases
@@ -47,9 +47,9 @@ Data staging is enabled for all benchmark experiments.
 "Deep Residual Learning for Image Recognition",
 *2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, Las Vegas, NV, USA, 2016, pp. 770-778, [doi: 10.1109/CVPR.2016.90](http://doi.org/10.1109/CVPR.2016.90).  
 [3] J. Deng, W. Dong, R. Socher, L. -J. Li, Kai Li and Li Fei-Fei, 
-"ImageNet: A large-scale hierarchical image database," 
+"ImageNet: A large-scale hierarchical image database", 
 *2009 IEEE Conference on Computer Vision and Pattern Recognition*, Miami, FL, USA, 2009, pp. 248-255, [doi: 10.1109/CVPR.2009.5206848](http://doi.org/10.1109/CVPR.2009.5206848).  
 [4] J. P. Gutiérrez Hermosillo Muriedas, K. Flügel, C. Debus, H. Obermaier, A. Streit, and M. Götz, 
-perun: Benchmarking energy consumption of high-performance computing applications,
+"perun: Benchmarking energy consumption of high-performance computing applications",
 *European Conference on Parallel Processing*, Springer, 2023, pp. 17–31, [doi: 10.1007/978-3-031-39698-4_2](https://doi.org/10.1007/978-3-031-39698-4_2).
 
