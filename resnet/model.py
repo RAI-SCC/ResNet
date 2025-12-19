@@ -4,7 +4,7 @@ import torchvision
 
 class ResNet(torch.nn.Module):
     """
-    Model. Choose required size of ResNet via attributes.
+    Model.
     """
     def __init__(self):
         super().__init__()

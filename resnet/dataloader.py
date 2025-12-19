@@ -24,19 +24,26 @@ def create_subset(valid_dataset=None,
     Create a subset of the data.
 
     Parameters
-    __________
-    valid_dataset :
+    ----------
+    valid_dataset : Dataset
         Validation set.
-    train_dataset :
+    train_dataset : Dataset
         Training set.
     subset_size : int
-        Number of samples used for train.
+        Number of samples used for training.
     subset_factor : int
-        factor for train and validation subsets.
+        Factor for train and validation subsets.
     seed_training : bool
         Use deterministic training if True.
     seed : int
         Seed for deterministic training.
+
+    Returns
+    -------
+    train_dataset_sub : Dataset
+        Subset for training.
+    valid_dataset_sub : Dataset
+        Subset for validation.
     """
 
     if seed_training is True:
@@ -46,13 +53,15 @@ def create_subset(valid_dataset=None,
     valid_targets = np.array(valid_dataset.targets)
     train_class_indices = defaultdict(list)
     valid_class_indices = defaultdict(list)
-    total_size_train = len(train_targets)  # Total number of sampler in train
-    total_size_valid = len(valid_targets)  # Total nNumber of sampler in valid
+    total_size_train = len(train_targets)
+    total_size_valid = len(valid_targets)
 
     if subset_factor != 0:
+        # Subsampling train and validation set by a factor.
         subset_size_train = int(total_size_train / subset_factor)
         subset_size_valid = int(total_size_valid / subset_factor)
     else:
+        # Subsampling train dataset to a certain number.
         subset_size_train = subset_size
         subset_size_valid = total_size_valid
 
@@ -64,8 +73,8 @@ def create_subset(valid_dataset=None,
         valid_class_indices[label].append(idx)
 
     # Get train fraction for correct distribution
-    class_share_ints_train = {}  # fractions (number of samples) for each label rounded off to int
-    class_share_diff_train = {}  # difference lost by rounding
+    class_share_ints_train = {}
+    class_share_diff_train = {}
     intermediate_size_train = 0
     for label in train_class_indices:
         label_share = len(train_class_indices[label]) / total_size_train
@@ -75,8 +84,8 @@ def create_subset(valid_dataset=None,
         intermediate_size_train += int(fraction)
 
     # Get valid fraction for correct distribution
-    class_share_ints_valid = {}  # fractions (number of samples) for each label rounded off to int
-    class_share_diff_valid = {}  # difference lost by rounding
+    class_share_ints_valid = {}
+    class_share_diff_valid = {}
     intermediate_size_valid = 0
     for label in valid_class_indices:
         label_share = len(valid_class_indices[label]) / total_size_valid
@@ -97,7 +106,7 @@ def create_subset(valid_dataset=None,
     train_indices = np.concatenate(train_indices).tolist()
     train_dataset_sub = torch.utils.data.Subset(train_dataset, train_indices)
 
-    # Get indices for valid subset
+    # Get indices for validation subset
     valid_indices = []
     diff = subset_size_valid - intermediate_size_valid
     top_n = sorted(class_share_diff_valid.items(), key=lambda x: x[1], reverse=True)[:diff]
@@ -123,10 +132,10 @@ def dataloader(batch_size: int = 32,
                seed_training: bool = False,
                seed: int = None):
     """
-    Get distributed ImageNet dataloaders for training and validation in a DDP setting.
+    Get distributed ImageNet data loaders for training and validation in a DDP setting.
 
     Parameters
-    __________
+    ----------
     batch_size : int
         Batch size.
     num_workers : int
@@ -141,6 +150,13 @@ def dataloader(batch_size: int = 32,
         Use deterministic training if True.
     seed : int
         Seed for deterministic training.
+
+    Returns
+    -------
+    train_loader : DataLoader
+        Data loader for training set.
+    valid_loader : DataLoader
+        Data loader for validation set.
     """
 
     # Define Paths

@@ -73,8 +73,9 @@ def calc_efficiency(data, scaling_list, eval_list):
 def eval_scaling(result_path, scaling_list, name):
     """
     Plots strong and weak scaling.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results
     scaling_list : dict

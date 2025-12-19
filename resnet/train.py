@@ -1,5 +1,4 @@
 import time
-import pickle
 import itertools
 
 import torch
@@ -7,7 +6,25 @@ import h5py
 
 
 def warmup_goyal_fn(epoch, batchsize, warmup_epochs, reference_lr):
-    # Define warmup https://arxiv.org/pdf/1706.02677
+    """
+    Function for warm-up as defined in https://arxiv.org/pdf/1706.02677.
+
+    Parameters
+    ----------
+    epoch : int
+        Current epoch.
+    batchsize : int
+        Batchsize.
+    warmup_epochs : int
+        Number of epochs used for warm-up.
+    reference_lr : float
+        Initial reference learning rate.
+
+    Returns
+    -------
+    lr : float
+        Learning rate.
+    """
     linear_scaling_factor = batchsize / 256
     max_lr = reference_lr * linear_scaling_factor
     diff_lr = max_lr - reference_lr
@@ -23,17 +40,16 @@ def compute_accuracy(model, data_loader):
     Compute accuracy of model predictions on given labeled data.
 
     Parameters
-    __________
+    ----------
     model : torch.nn.Module
         Model.
     data_loader : torch.utils.data.Dataloader
         Dataloader.
-    device : torch.device
-        device to use
 
     Returns
-    _______
-    float : The model's accuracy on the given dataset in percent.
+    -------
+    float
+        The model's accuracy on the given dataset in percent.
     """
     with torch.no_grad():
         correct_pred, num_examples = 0, 0
@@ -53,20 +69,22 @@ def get_right(model, data_loader):
     Compute the number of correctly predicted samples and the overall number of samples in a given dataset.
 
     Parameters
-    __________
+    ----------
     model : torch.nn.Module
         Model.
     data_loader : torch.utils.data.Dataloader
         Dataloader.
 
     Returns
-    _______
-    correct_pred : int
-        The number of correctly predicted samples.
+    -------
     num_examples : int
         The overall number of samples in the dataset.
     loss : float
-        Loss
+        Loss.
+    top1_pred : fload
+        Top1 error.
+    top5_pred : float
+        Top5 error.
     """
     with torch.no_grad():
         top1_pred, top5_pred, total_num_examples, loss = 0, 0, 0, 0
@@ -112,25 +130,25 @@ def train_model(
     Parameters
     __________
     model : torch.nn.Module
-        Model to train
+        Model to be trained.
     num_epochs : int
-        Number of epochs to train
+        Number of epochs to be trained.
     train_loader : torch.utils.data.Dataloader
-        Training dataloader
+        Training data loader.
     valid_loader : torch.utils.data.Dataloader
-        Validation dataloader
+        Validation data loader.
     optimizer : torch.optim.Optimizer
-        Optimizer to use
+        Optimizer to used.
     start_time : float
-        Start time of main
+        Start time in main.
     warmup_scheduler :
-        For gradually increasing the lr
+        Warm-up scheduler for learning rate.
     lr_scheduler :
-        LR scheduler
+        LR scheduler.
     warmup_epochs : int
-        Num of epochs for lr get reach target value
+        Number of epochs used for the warm-up scheduler.
     batch_iter: int
-        Maximum number of batch iterations per epoch
+        Maximum number of batch iterations per epoch. If 0, no limit is applied.
 
     Returns
     _______

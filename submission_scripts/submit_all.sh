@@ -64,15 +64,6 @@ PERUN_APP_NAME="perun"
 
 cd ${RESDIR}
 
-# arguments for the training:
-# --use_factor: Devisor that reduces train and validation set. If 0, full dataset is used
-# --data_path: path to training, valid data
-# --batchsize: global batch size
-# --num_epochs: number of epochs the model will be trained
-# --seed: to enable deterministic training
-# --lr_scheduler: [cosine, plateau, multistep], choose learning rate scheduler
-# --subset_size: Size of train subset, i.e. number of Samples. If None, the full dataset is used
-
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \

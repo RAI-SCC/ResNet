@@ -27,8 +27,9 @@ plt.rcParams['axes.prop_cycle'] = cycler(color=list(kitcolors.values()))
 def plot_scaling(result_path, data, scaling_list, name):
     """
     Plots scaling with total times/ gpuh and consumed energy.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -104,8 +105,9 @@ def plot_scaling(result_path, data, scaling_list, name):
 def plot_scaling_per_workload(result_path, data, scaling_list, name):
     """
     Plots strong and weak scaling with total run times and consumed energy.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -151,8 +153,9 @@ def plot_scaling_per_workload(result_path, data, scaling_list, name):
 def plot_scaling_power(result_path, data, scaling_list, name):
     """
     Plots power scaling.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -198,8 +201,9 @@ def plot_scaling_power(result_path, data, scaling_list, name):
 def plot_top1(result_path, scaling_list, name, key):
     """
     Plot the Top1 errors versus epochs.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results
     scaling_list : list
@@ -394,8 +398,9 @@ def plot_power(result_path, data, scaling_list, name):
 def plot_efficiency(result_path, data, scaling_list, name):
     """
     Plots efficiencies.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -465,8 +470,9 @@ def plot_efficiency(result_path, data, scaling_list, name):
 def plot_timings(result_path, data, scaling_list, name):
     """
     Plots timings.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -620,8 +626,9 @@ def plot_timings(result_path, data, scaling_list, name):
 def plot_gpu_mem(result_path, data, scaling_list, name):
     """
     Plots gpu memory and power.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict

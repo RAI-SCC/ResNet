@@ -17,14 +17,14 @@ def get_cores(h5val, h5_path: str = None, key: str = None) -> list:
     Get core numbers.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     key : str
         gpu, cpu, or ram
 
     Returns
-    _______
+    -------
     cores : list
         Integer list corresponding to node numbers.
     """
@@ -49,12 +49,12 @@ def get_h5_paths(h5val) -> [list, list]:
     Builds hdf5 paths for each node.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
 
     Returns
-    _______
+    -------
     h5_paths : list
         List with Paths.
     nodes : list
@@ -76,7 +76,7 @@ def adjust_energy(energy: np.array = None, max_val: float = None) -> np.array:
     Manipulates energy values from perun hdf5 file to get correct values.
 
     Parameters
-    __________
+    ----------
     energy : np.array
         Energy values to b e adjusted.
     key : str
@@ -85,7 +85,7 @@ def adjust_energy(energy: np.array = None, max_val: float = None) -> np.array:
         Device overflow limit.
 
     Returns
-    _______
+    -------
     energy_adjusted : np.array
         Adjusted energy values.
     """
@@ -111,7 +111,7 @@ def get_utilization(
     Get gpu power data from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -122,7 +122,7 @@ def get_utilization(
         gou, cpu, or ram
 
     Returns
-    _______
+    -------
     data : dict
         Contains the gpu power data saved as np.arrays.
     """
@@ -151,7 +151,7 @@ def get_gpu_freq(
     Get gpu frequencies from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -162,7 +162,7 @@ def get_gpu_freq(
         gou, cpu, or ram
 
     Returns
-    _______
+    -------
     data : dict
         Contains utilization data saved as np.arrays.
     """
@@ -183,7 +183,7 @@ def get_gpu_sm(
     Get gpu sm from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -194,7 +194,7 @@ def get_gpu_sm(
         gou, cpu, or ram
 
     Returns
-    _______
+    -------
     data : dict
         Contains utilization data saved as np.arrays.
     """
@@ -215,7 +215,7 @@ def get_power(
     Get gpu power data from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -226,7 +226,7 @@ def get_power(
         gou, cpu, or ram
 
     Returns
-    _______
+    -------
     data : dict
         Contains the gpu power data saved as np.arrays.
     """
@@ -253,7 +253,7 @@ def get_cpu_freq(
     Get cpu frequencies from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -264,7 +264,7 @@ def get_cpu_freq(
         gou, cpu, or ram
 
     Returns
-    _______
+    -------
     data : dict
         Contains frequencies data saved as np.arrays.
     """
@@ -292,7 +292,7 @@ def get_cpu_util(
     Get utilization data from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -303,7 +303,7 @@ def get_cpu_util(
         gou, cpu, or ram
 
     Returns
-    _______
+    -------
     data : dict
         Contains utilization data saved as np.arrays.
     """
@@ -321,7 +321,7 @@ def get_gpu_mem(
     Get gpu memory data from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -330,7 +330,7 @@ def get_gpu_mem(
         Index of corresponding core
 
     Returns
-    _______
+    -------
     mem : dict
         Contains the gpu memory data saved as np.arrays.
     timesteps : dict
@@ -352,7 +352,7 @@ def get_energy(
     Get ram or cpu energy data from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -363,7 +363,7 @@ def get_energy(
         gpu or ram
 
     Returns
-    _______
+    -------
     data : dict
         Contains the cpu or ram data saved as np.arrays.
     """
@@ -389,7 +389,7 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
     Get ram, cpu, or gpu energy/power data from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -398,7 +398,7 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
         gpu, ram, or cpu
 
     Returns
-    _______
+    -------
     data : dict
         Contains the cpu, ram, or gpu data saved as np.arrays.
     """
@@ -432,12 +432,12 @@ def get_perun_data(h5val: h5py = None) -> dict:
     Get all energy and power data from corresponding hdf5 file provided by perun.
 
     Parameters
-    __________
+    ----------
     h5val : HDF5
         Key value to hdf5 file.
 
     Returns
-    _______
+    -------
     perun_data : dict
         Contains the perun data saved as np.arrays.
     """
