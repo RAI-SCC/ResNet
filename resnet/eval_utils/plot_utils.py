@@ -27,8 +27,9 @@ plt.rcParams['axes.prop_cycle'] = cycler(color=list(kitcolors.values()))
 def plot_scaling(result_path, data, scaling_list, name):
     """
     Plots scaling with total times/ gpuh and consumed energy.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -104,8 +105,9 @@ def plot_scaling(result_path, data, scaling_list, name):
 def plot_scaling_per_workload(result_path, data, scaling_list, name):
     """
     Plots strong and weak scaling with total run times and consumed energy.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -151,8 +153,9 @@ def plot_scaling_per_workload(result_path, data, scaling_list, name):
 def plot_scaling_power(result_path, data, scaling_list, name):
     """
     Plots power scaling.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -198,8 +201,9 @@ def plot_scaling_power(result_path, data, scaling_list, name):
 def plot_top1(result_path, scaling_list, name, key):
     """
     Plot the Top1 errors versus epochs.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results
     scaling_list : list
@@ -394,8 +398,9 @@ def plot_power(result_path, data, scaling_list, name):
 def plot_efficiency(result_path, data, scaling_list, name):
     """
     Plots efficiencies.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -465,8 +470,9 @@ def plot_efficiency(result_path, data, scaling_list, name):
 def plot_timings(result_path, data, scaling_list, name):
     """
     Plots timings.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -620,8 +626,9 @@ def plot_timings(result_path, data, scaling_list, name):
 def plot_gpu_mem(result_path, data, scaling_list, name):
     """
     Plots gpu memory and power.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results.
     data : dict
@@ -677,3 +684,108 @@ def plot_gpu_mem(result_path, data, scaling_list, name):
 
                 plt.savefig(target_path, dpi=300, bbox_inches='tight')
                 plt.close(fig)
+
+
+def plot_gpu_sm(result_path, data, scaling_list, name):
+    """
+    Plots mean gpu sm.
+
+    Parameters
+    ----------
+    result_path : Path
+        Path to results.
+    data : dict
+        Results saved in nested dictionary.
+    scaling_list : dict
+        Labels saved in dict.
+    name : str
+        Name for the plot to be saves.
+    """
+    fs = 7
+    ms = 2
+    lw = 1
+    elw = 1
+
+    time_vals = []
+    gpu_power_vals = []
+    cpu_power_vals = []
+    ram_power_vals = []
+    gpu_energy_vals = []
+    cpu_energy_vals = []
+    ram_energy_vals = []
+    gpu_sm_vals = []
+    gpu_energy_per_gpuh = []
+    energy_vals = []
+    gpuh_vals = []
+    num_gpus = []
+    nodes = []
+    lbs = []
+    gbs = []
+    e_times = []
+    samples = []
+    top1_error_valid = []
+
+    time_rmse = []
+    gpu_power_rmse = []
+    cpu_power_rmse = []
+    ram_power_rmse = []
+    gpu_energy_rmse = []
+    cpu_energy_rmse = []
+    ram_energy_rmse = []
+    gpu_sm_rmse = []
+    energy_rmse = []
+    gpuh_rmse = []
+    e_times_rmse = []
+    top1_error_valid_rmse = []
+
+    for folder in scaling_list:
+        time_vals.append(data[folder]["mean"]["perun_time"])
+        gpu_power_vals.append(data[folder]["mean"]["gpu_power_mean"])
+        cpu_power_vals.append(data[folder]["mean"]["cpu_socket_power_mean"])
+        ram_power_vals.append(data[folder]["mean"]["ram_socket_power_mean"])
+        gpu_energy_vals.append(data[folder]["mean"]["perun_gpu_energy"])
+        cpu_energy_vals.append(data[folder]["mean"]["perun_cpu_energy"])
+        ram_energy_vals.append(data[folder]["mean"]["perun_ram_energy"])
+        energy_vals.append(data[folder]["mean"]["perun_energy"])
+        gpu_sm_vals.append(data[folder]["mean"]["gpu_sm"])
+        gpu_energy_per_gpuh.append(data[folder]["mean"]["perun_gpu_energy"]/data[folder]["mean"]["perun_gpu_h"])
+        gpuh_vals.append(data[folder]["mean"]["perun_gpu_h"])
+        num_gpus.append(data[folder]["gpus"])
+        lbs.append(data[folder]["lbs"])
+        gbs.append(data[folder]["gbs"])
+        samples.append(data[folder]["nsamples"])
+        e_times.append(float(np.mean(data[folder]["mean"]["epoch_times"])))
+        nodes.append(data[folder]["nodes"])
+        top1_error_valid.append(data[folder]["mean"]["top1_error_valid"])
+
+        time_rmse.append(data[folder]["rmse"]["perun_time"])
+        gpu_power_rmse.append(data[folder]["rmse"]["gpu_power_mean"])
+        cpu_power_rmse.append(data[folder]["rmse"]["cpu_socket_power_mean"])
+        ram_power_rmse.append(data[folder]["rmse"]["ram_socket_power_mean"])
+        gpu_energy_rmse.append(data[folder]["rmse"]["perun_gpu_energy"])
+        cpu_energy_rmse.append(data[folder]["rmse"]["perun_cpu_energy"])
+        ram_energy_rmse.append(data[folder]["rmse"]["perun_ram_energy"])
+        gpu_sm_rmse.append(data[folder]["rmse"]["gpu_sm"])
+        energy_rmse.append(data[folder]["rmse"]["perun_energy"])
+        gpuh_rmse.append(data[folder]["rmse"]["perun_gpu_h"])
+        e_times_rmse.append(float(np.mean(data[folder]["rmse"]["epoch_times"])))
+        top1_error_valid_rmse.append(data[folder]["rmse"]["top1_error_valid"])
+
+
+
+
+    ram_contribution = np.array(ram_energy_vals) / np.array(energy_vals)
+
+    print(40*"_")
+    print(name)
+    print(f'vals["resnet"]["{name}"]["label"] = "ResNet: GBS={gbs}, LBS={lbs}"')
+    print(f'vals["resnet"]["{name}"]["folders"] = {scaling_list}')
+    print(f'vals["resnet"]["{name}"]["gpus"] = {num_gpus}')
+    print(f'vals["resnet"]["{name}"]["lbs"] = {lbs}')
+    print(f'vals["resnet"]["{name}"]["gbs"] = "{gbs}')
+    print(f'vals["resnet"]["{name}"]["mean"]["gpu_power"] = {gpu_power_vals}')
+    print(f'vals["resnet"]["{name}"]["mean"]["samples"] = {samples}')
+    print(f'vals["resnet"]["{name}"]["mean"]["gpu_sm"] = {gpu_sm_vals}')
+    print(40*"_")
+    print(f'vals["resnet"]["{name}"]["rmse"]["gpu_power"] = {gpu_power_rmse}')
+    print(f'vals["resnet"]["{name}"]["rmse"]["gpu_sm"] = {gpu_sm_rmse}')

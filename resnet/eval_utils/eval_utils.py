@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from resnet.eval_utils.read_utils import get_perun_data, get_timings
-from resnet.eval_utils.plot_utils import plot_scaling, plot_scaling_per_workload, plot_efficiency
+from resnet.eval_utils.plot_utils import plot_scaling, plot_scaling_per_workload, plot_efficiency, plot_gpu_sm
 from resnet.eval_utils.plot_utils import plot_timings, plot_gpu_mem, plot_power
 from resnet.eval_utils.table_utils import make_table_large, make_table_small, make_table_es
 
@@ -73,8 +73,9 @@ def calc_efficiency(data, scaling_list, eval_list):
 def eval_scaling(result_path, scaling_list, name):
     """
     Plots strong and weak scaling.
+
     Parameters
-    __________
+    ----------
     result_path : Path
         Path to results
     scaling_list : dict
@@ -138,11 +139,26 @@ def eval_scaling(result_path, scaling_list, name):
             gpu_mem_single_device_mean_list = []
             gpu_power = {}
             gpu_timesteps = {}
+            gpu_sm = {}
+            gpu_sm_single_device_mean_list = []
+            gpu_freq = []
             shapes = {}
             for key, _ in perun_data.items():
                 for num, _ in perun_data[key]["gpu"].items():
                     # energy
                     gpu.append(perun_data[key]["gpu"][num]["energy"][-1] / 10 ** 6)
+                    # frequency
+                    freq = perun_data[key]["gpu"][num]["freq"]
+                    timesteps = perun_data[key]["gpu"][num]["timesteps"]
+                    area = np.trapz(freq, timesteps)
+                    duration = timesteps[-1] - timesteps[0]
+                    gpu_freq.append(area / duration)
+                    # sm
+                    sm = perun_data[key]["gpu"][num]["sm"]
+                    timesteps = perun_data[key]["gpu"][num]["timesteps"]
+                    gpu_sm[f"{key}_{num}"] = sm
+                    gpu_sm_single_device_mean = np.trapz(sm, timesteps) / (timesteps[-1] - timesteps[0])
+                    gpu_sm_single_device_mean_list.append(gpu_sm_single_device_mean)
                     # memory and power
                     timesteps = perun_data[key]["gpu"][num]["timesteps"]
                     gpu_timesteps[f"{key}_{num}"] = timesteps
@@ -184,10 +200,11 @@ def eval_scaling(result_path, scaling_list, name):
             perun_energy = gpu_total + cpu_total + ram_total
             gpu_power_mean = np.array(gpu_power_single_device_mean_list).sum() / gpus
             gpu_mem_mean = np.array(gpu_mem_single_device_mean_list).sum() / gpus
+            gpu_freq_mean = np.mean(np.array(gpu_freq))
+            gpu_sm_mean = np.mean(np.array(gpu_sm_single_device_mean_list))
             cpu_socket_power_mean = np.array(cpu_power_single_device_mean_list).sum() / (2*nodes)
             ram_socket_power_mean = np.array(ram_power_single_device_mean_list).sum() / (2 * nodes)
             cpu_util_mean = np.mean(np.array(cpu_util_list))
-            print(cpu_util_mean)
 
             # Get perun last time:
             time_list = []
@@ -248,6 +265,8 @@ def eval_scaling(result_path, scaling_list, name):
             data[folder][slurm_id]["top5_error_train"] = 100 - top5_train_acc[-1]
             data[folder][slurm_id]["slurm_energy"] = slurm_energy/1000  # Wh in KWh
             data[folder][slurm_id]["slurm_time"] = slurm_time
+            data[folder][slurm_id]["gpu_freq"] = gpu_freq_mean
+            data[folder][slurm_id]["gpu_sm"] = gpu_sm_mean
             data[folder][slurm_id]["gpu_power"] = gpu_power
             data[folder][slurm_id]["gpu_mem"] = gpu_mem
             data[folder][slurm_id]["gpu_mem_mean"] = gpu_mem_mean
@@ -257,7 +276,6 @@ def eval_scaling(result_path, scaling_list, name):
             data[folder][slurm_id]["ram_socket_power_mean"] = ram_socket_power_mean
             data[folder][slurm_id]["epoch_times"] = e_times
             data[folder][slurm_id]["cpu_util"] = cpu_util_mean
-            print(folder, slurm_id, cpu_util_mean)
             #data[folder][slurm_id]["cpu_power_single_device_mean"] = np.array(cpu_power_single_device_mean_list)
 
         # Get timing data
@@ -294,9 +312,10 @@ def eval_scaling(result_path, scaling_list, name):
     plot_scaling(result_path, data, scaling_list, name)
     #plot_scaling_per_workload(result_path, data, scaling_list, name)
     #plot_efficiency(result_path, data, scaling_list, name)
-    plot_timings(result_path, data, scaling_list, name)
-    plot_gpu_mem(result_path, data, scaling_list, name)
-    plot_power(result_path, data, scaling_list, name)
+    #plot_timings(result_path, data, scaling_list, name)
+    #plot_gpu_mem(result_path, data, scaling_list, name)
+    #plot_power(result_path, data, scaling_list, name)
+    plot_gpu_sm(result_path, data, scaling_list, name)
 
     # make table
     make_table_large(result_path, data, scaling_list, name)
