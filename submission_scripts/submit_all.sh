@@ -6,7 +6,7 @@
 #SBATCH --account=hk-project-test-p0025793_2
 #SBATCH --output="/hkfs/work/workspace/scratch/xy6660-ResNet/experiments/slurm_%j"
 #SBATCH --exclusive
-#SBATCH --exclude  hkn[0605,0607,0625,0635,0435,0534,0628,0811]
+##SBATCH --exclude  hkn[]
 
 # Create input data on TMPDIR:
 date
@@ -27,8 +27,7 @@ export MASTER_ADDR=$master_addr
 echo "MASTER_ADDR="$MASTER_ADDR
 
 # Pyvenv
-#source /hkfs/work/workspace/scratch/xy6660-ResNet/pyvenv3.11/bin/activate
-source /hkfs/work/workspace/scratch/xy6660-ResNet/pyvenv311_modified_perun/bin/activate
+source /hkfs/work/workspace/scratch/xy6660-ResNet/pyvenv311/bin/activate
 
 if [ -n "$SLURM_NPROCS" ]; then
     export NUM_GPUS=$SLURM_NPROCS

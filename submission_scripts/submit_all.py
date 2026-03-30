@@ -88,21 +88,21 @@ experiments_ws3 = {"1g256l": dict([("RUNTIME", "05:40:00"), ("NNODES", "1"), ("L
                    "4g64l": dict([("RUNTIME", "06:00:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "4")]),
                    "8g32l": dict([("RUNTIME", "06:30:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("SUBSET_FACTOR", "2")])}
 
-exp_new_timings_78_batch_iter = {#"64g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "16"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"32g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "8"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"16g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "4"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"8g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"4g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"16g16l": dict([("RUNTIME", "00:10:00"), ("NNODES", "4"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"8g32l": dict([("RUNTIME", "00:10:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 "4g64l": dict([("RUNTIME", "00:10:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1")]),
-                                 #"64g16l": dict([("RUNTIME", "00:10:00"), ("NNODES", "16"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"32g32l": dict([("RUNTIME", "00:10:00"), ("NNODES", "8"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"16g64l": dict([("RUNTIME", "00:10:00"), ("NNODES", "4"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
-                                 #"8g128l": dict([("RUNTIME", "00:10:00"), ("NNODES", "2"), ("LBS", "128"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "78")]),
+exp_new_timings_100_batch_iter = {#"64g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "16"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"32g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "8"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"16g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "4"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"8g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "2"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"4g256l": dict([("RUNTIME", "00:10:00"), ("NNODES", "1"), ("LBS", "256"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"16g16l": dict([("RUNTIME", "00:10:00"), ("NNODES", "4"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"8g32l": dict([("RUNTIME", "00:10:00"), ("NNODES", "2"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 "4g64l": dict([("RUNTIME", "00:10:00"), ("NNODES", "1"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"64g16l": dict([("RUNTIME", "00:10:00"), ("NNODES", "16"), ("LBS", "16"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"32g32l": dict([("RUNTIME", "00:10:00"), ("NNODES", "8"), ("LBS", "32"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"16g64l": dict([("RUNTIME", "00:10:00"), ("NNODES", "4"), ("LBS", "64"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
+                                 #"8g128l": dict([("RUNTIME", "00:10:00"), ("NNODES", "2"), ("LBS", "128"), ("TASKS", "4"), ("GPUs", "4"), ("EPOCHS", "1"), ("BATCH_ITER", "100")]),
                                  }
 
-experiments = exp_new_timings_78_batch_iter
+experiments = exp_new_timings_100_batch_iter
 
 for key in experiments:
     runtime = experiments[key]["RUNTIME"]
