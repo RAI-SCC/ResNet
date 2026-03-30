@@ -40,16 +40,17 @@ Data staging is enabled for all benchmark experiments.
 ## References
 
 [1] P. Huber, D. Li, J. P. Gutiérrez Hermosillo Muriedas, D. Kieckhefen, M. Götz, A. Streit, C. Debus,
-"Energy Consumption in Parallel Neural Network Training", (2025),
-[doi: 10.48550/arXiv.2508.07706](https://doi.org/10.48550/arXiv.2508.07706)  
-*An updated version of this publication will be available soon.*  
+"Energy Consumption in Parallel Neural Network Training", 
+*Proceedings of the 2026 SIAM Conference on Parallel Processing for Scientific Computing (PP)*,
+2026, 46--59,
+[doi: 10.1137/1.9781611979022.4](https://doi.org/10.1137/1.9781611979022.4)  
 [2] K. He, X. Zhang, S. Ren and J. Sun, 
 "Deep Residual Learning for Image Recognition",
-*2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, Las Vegas, NV, USA, 2016, pp. 770-778, [doi: 10.1109/CVPR.2016.90](http://doi.org/10.1109/CVPR.2016.90).  
+*2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, Las Vegas, NV, USA, 2016, 770-778, [doi: 10.1109/CVPR.2016.90](http://doi.org/10.1109/CVPR.2016.90).  
 [3] J. Deng, W. Dong, R. Socher, L. -J. Li, Kai Li and Li Fei-Fei, 
 "ImageNet: A large-scale hierarchical image database", 
-*2009 IEEE Conference on Computer Vision and Pattern Recognition*, Miami, FL, USA, 2009, pp. 248-255, [doi: 10.1109/CVPR.2009.5206848](http://doi.org/10.1109/CVPR.2009.5206848).  
+*2009 IEEE Conference on Computer Vision and Pattern Recognition*, Miami, FL, USA, 2009, 248-255, [doi: 10.1109/CVPR.2009.5206848](http://doi.org/10.1109/CVPR.2009.5206848).  
 [4] J. P. Gutiérrez Hermosillo Muriedas, K. Flügel, C. Debus, H. Obermaier, A. Streit, and M. Götz, 
 "perun: Benchmarking energy consumption of high-performance computing applications",
-*European Conference on Parallel Processing*, Springer, 2023, pp. 17–31, [doi: 10.1007/978-3-031-39698-4_2](https://doi.org/10.1007/978-3-031-39698-4_2).
+*European Conference on Parallel Processing*, Springer, 2023, 17–31, [doi: 10.1007/978-3-031-39698-4_2](https://doi.org/10.1007/978-3-031-39698-4_2).
 
