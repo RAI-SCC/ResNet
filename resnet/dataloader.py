@@ -1,8 +1,11 @@
 import torch
+#from torch.utils.data import DataLoader
 import torchvision as tv
 import numpy as np
 import random
 from collections import defaultdict
+
+from resnet.torch_modified.dataloader import DataLoader
 
 
 def worker_init_seed_fn(worker_id):
@@ -214,7 +217,7 @@ def dataloader(batch_size: int = 32,
         generator = torch.Generator()
         generator.manual_seed(0)
     
-    train_loader = torch.utils.data.DataLoader(
+    train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size // torch.distributed.get_world_size(),
         sampler=train_sampler,
@@ -223,7 +226,7 @@ def dataloader(batch_size: int = 32,
         generator=generator,
         prefetch_factor=None
     )
-    valid_loader = torch.utils.data.DataLoader(
+    valid_loader = DataLoader(
         valid_dataset,
         batch_size=batch_size // torch.distributed.get_world_size(),
         sampler=valid_sampler,

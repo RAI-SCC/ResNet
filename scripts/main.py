@@ -10,7 +10,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau, CosineAnnealingLR, MultiStepLR
 
 from resnet.model import ResNet
-from resnet.train import train_model, warmup_goyal_fn
+from resnet.train_with_monitoring import train_model, warmup_goyal_fn
 from resnet.dataloader import dataloader
 
 
@@ -19,15 +19,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--subset_size", default=None, type=int,
                         help='Size of Subset, i.e. number of Samples. If None, the full dataset is used')
-    parser.add_argument("--subset_factor", default=0, type=int, help='Factor (devisor) of Subset. If 0, the full dataset is used')
-    parser.add_argument("--data_path", default="./", type=str, help='Path to data.')
-    parser.add_argument("--batchsize", default=1, type=int, help='Global batch size.')
-    parser.add_argument("--num_epochs", default=2, type=int, help='Number of epochs to be trained.')
-    parser.add_argument("--num_workers", default=2, type=int, help='Number of workers used in dataloader.')
+    parser.add_argument("--subset_factor", default=0, type=int,
+                        help='Factor (devisor) of Subset. If 0, the full dataset is used')
+    parser.add_argument("--data_path", default="./", type=str,
+                        help='Path to data.')
+    parser.add_argument("--batchsize", default=1, type=int,
+                        help='Global batch size.')
+    parser.add_argument("--num_epochs", default=2, type=int,
+                        help='Number of epochs to be trained.')
+    parser.add_argument("--num_workers", default=2, type=int,
+                        help='Number of workers used in dataloader.')
     parser.add_argument("--lr_scheduler", default="plateau", type=str, choices=["cosine", "plateau", "multistep"],
                         help="Choose learning rate scheduler (cosine, plateau, multistep).")
-    parser.add_argument('--seed', default=None, type=int, help='seed for initializing training')
-    parser.add_argument('--batch_iter', default=0, type=int, help='Maximum number of batch iterations per epoch. If 0, this value is ignored.')
+    parser.add_argument('--seed', default=None, type=int,
+                        help='seed for initializing training')
+    parser.add_argument('--batch_iter', default=0, type=int,
+                        help='Maximum number of batch iterations per epoch. If 0, this value is ignored.')
     args = parser.parse_args()
 
     seed_training = False
@@ -52,6 +59,7 @@ def main():
     assert gpu == slurm_localid
     device = f"cuda:{slurm_localid}"
     torch.cuda.set_device(device)
+    gpu_id = torch.cuda.current_device()
 
     # Initialize DDP
     dist.init_process_group(
@@ -61,26 +69,28 @@ def main():
     if rank == 0:
         print(f"{30 * '-'} \n")
         if args.seed is not None:
-            print(f"Deterministic training is enabled")
+            print(f"TRAINING INFO || Deterministic training is enabled")
         if args.subset_size is not None:
-            print(f"A data subset of {args.subset_size} samples in train is used")
+            print(f"TRAINING INFO || A data subset of {args.subset_size} samples in train is used")
         if args.subset_factor != 0:
-            print(f"A data subset with a fraction of 1/{args.subset_factor} in train and validation is used")
-        if args.batch_iter !=0:
-            print(f"A maximum number of {args.batch_iter} batch iterations applied")
-        print(f"{30 * '-'} \n"
-              f"CUDA Available: {torch.cuda.is_available()} \n"
-              f"Number of GPUs: {world_size} \n"
-              f"Global Batch Size: {args.batchsize} \n"
-              f"Local Batch Size: {int(args.batchsize / world_size)} \n"
-              f"Max Epoch: {args.num_epochs} \n"
-              f"Number of Workers: {args.num_workers} \n"
-              f"LR Scheduler: {args.lr_scheduler} \n"
+            print(f"TRAINING INFO || A data subset with a fraction of 1/{args.subset_factor} in train and validation is used")
+        if args.batch_iter != 0:
+            print(f"TRAINING INFO || A maximum number of {args.batch_iter} batch iterations applied")
+        print(f"TRAINING INFO || CUDA Available: {torch.cuda.is_available()} \n"
+              f"TRAINING INFO || Number of GPUs: {world_size} \n"
+              f"TRAINING INFO || Global Batch Size: {args.batchsize} \n"
+              f"TRAINING INFO || Local Batch Size: {int(args.batchsize / world_size)} \n"
+              f"TRAINING INFO || Max Epoch: {args.num_epochs} \n"
+              f"TRAINING INFO || Number of Workers: {args.num_workers} \n"
+              f"TRAINING INFO || LR Scheduler: {args.lr_scheduler} \n"
               f"{30 * '-'}")
+    torch.cuda.synchronize()
+    dist.barrier()
     if dist.is_initialized():
-        print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())} "
-              f"| Hostname: {hostname} "
-              f"| Slurm rank / world size: {rank} / {world_size} ")
+        print(f"| Hostname: {hostname} "
+              f"| GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())} "
+              f"| Device: {gpu_id} "
+              f"| Slurm rank / world size: {rank} / {world_size} |")
     else:
         print(f"CUDA Available: {torch.cuda.is_available()}")
         print(f"Batch Size: {args.batchsize}")
