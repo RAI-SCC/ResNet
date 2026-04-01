@@ -47,8 +47,6 @@ def main():
         torch.backends.cudnn.benchmark = False
         seed_training = True
 
-    start_time = time.perf_counter()
-
     # Distributed set up
     world_size = int(os.getenv("SLURM_NPROCS"))  
     rank = int(os.getenv("SLURM_PROCID")) 
@@ -59,12 +57,15 @@ def main():
     assert gpu == slurm_localid
     device = f"cuda:{slurm_localid}"
     torch.cuda.set_device(device)
+    device_id = torch.device(f"cuda:{slurm_localid}")
     gpu_id = torch.cuda.current_device()
 
     # Initialize DDP
     dist.init_process_group(
-        backend="nccl", rank=rank, world_size=world_size, init_method="env://"
+        backend="nccl", rank=rank, world_size=world_size, device_id=device_id, init_method="env://"
     )
+
+    start_time = time.perf_counter()
 
     if rank == 0:
         print(f"{30 * '-'} \n")

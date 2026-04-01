@@ -479,7 +479,6 @@ class DataLoader(Generic[_T_co]):
 
     # We quote '_BaseDataLoaderIter' since it isn't defined yet and the definition can't be moved up
     # since '_BaseDataLoaderIter' references 'DataLoader'.
-    @monitor
     def __iter__(self) -> "_BaseDataLoaderIter":
         # When using a single worker the returned iterator should be
         # created everytime to avoid resetting its state
@@ -786,7 +785,7 @@ class _SingleProcessDataLoaderIter(_BaseDataLoaderIter):
             self._collate_fn,
             self._drop_last,
         )
-
+    @monitor()
     def _next_data(self):
         index = self._next_index()  # may raise StopIteration
         data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
@@ -1456,7 +1455,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
                 success, data = self._try_get_data()
                 if success:
                     return data
-
+    @monitor()
     def _next_data(self):
         while True:
             # If the worker responsible for `self._rcvd_idx` has already ended

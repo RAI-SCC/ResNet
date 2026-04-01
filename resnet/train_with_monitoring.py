@@ -166,7 +166,7 @@ def train_model(
             # Forward
             torch.cuda.synchronize()
             dist.barrier()
-            output = single_forward_step(features)
+            output = single_forward_step(features, model)
             # Loss
             torch.cuda.synchronize()
             dist.barrier()
@@ -179,7 +179,7 @@ def train_model(
             # Weight step
             torch.cuda.synchronize()
             dist.barrier()
-            single_update_step()
+            single_update_step(optimizer)
 
         # Evaluation
         if batch_iter == 0:
