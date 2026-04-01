@@ -123,7 +123,7 @@ def eval_scaling(result_path, scaling_list, name):
             # Get perun data
             perun_h5_file = Path(result_path, folder, slurm_id, "perun", "perun.hdf5")
             h5val = h5py.File(perun_h5_file, 'r')
-            perun_data = get_perun_data(h5val)
+            perun_data, perun_region_data = get_perun_data(h5val, name)
             # Get perun total energies
             gpu = []
             cpu = []

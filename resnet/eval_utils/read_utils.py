@@ -1,3 +1,5 @@
+import ast
+
 import numpy as np
 import scipy as sp
 import h5py
@@ -12,19 +14,48 @@ def print_attrs(name, obj):
         print(f"  - Attribute: {key}: {val}")
 
 
+def get_h5_paths(h5val) -> [list, dict]:
+    """
+    Builds hdf5 paths for each node.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+
+    Returns
+    _______
+    h5_paths : list
+        List with Paths.
+    Nodes : Dict
+        Dictionary with nodes and global rank values.
+    """
+    h5id, _ = next(iter(h5val["perun/nodes"].items()))
+    h5_base_path = "perun/nodes/" + h5id + "/nodes/0/nodes"
+    h5_paths = []
+    nodes = {}
+    # get internal hdf5 paths to data for each node
+    for node_id, node_obj in h5val[h5_base_path].items():
+        h5_paths.append("perun/nodes/" + h5id + "/nodes/0/nodes/" + node_id + "/nodes")
+        ranks = h5val["perun/nodes/" + h5id + "/nodes/0/nodes/" + node_id].attrs.get("mpi_ranks")
+        ranks = ast.literal_eval(ranks)
+        nodes[node_id] = ranks  # not necessarily true - be careful and doublecheck
+    return h5_paths, nodes
+
+
 def get_cores(h5val, h5_path: str = None, key: str = None) -> list:
     """
     Get core numbers.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
     key : str
         gpu, cpu, or ram
 
     Returns
-    -------
+    _______
     cores : list
         Integer list corresponding to node numbers.
     """
@@ -44,74 +75,147 @@ def get_cores(h5val, h5_path: str = None, key: str = None) -> list:
     return cores
 
 
-def get_h5_paths(h5val) -> [list, list]:
+def get_keys(h5val, h5_paths) -> [list, list]:
     """
     Builds hdf5 paths for each node.
 
     Parameters
-    ----------
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+        _______
+    h5_paths : list
+        List with Paths.
+
+    Returns
+    _______
+    keys : list
+        Devises monitored by perun.
+    """
+    keys = ["gpu", "cpu", "ram"]
+    for h5_path in h5_paths:
+        node_keys = [name for name, obj in h5val[h5_path].items() if isinstance(obj, h5py.Group)]
+        if "gpu" not in node_keys:
+            keys.remove("gpu")
+        if "gpu" not in node_keys:
+            keys.remove("cpu")
+        if "gpu" not in node_keys:
+            keys.remove("ram")
+    return keys
+
+
+def check_regions(h5val) -> [list]:
+    """
+    Get regions if present.
+
+    Parameters
+    __________
     h5val : HDF5
         Key value to hdf5 file.
 
     Returns
-    -------
-    h5_paths : list
+    _______
+    region_paths : list
         List with Paths.
-    nodes : list
-        List with node names.
     """
     h5id, _ = next(iter(h5val["perun/nodes"].items()))
-    h5_base_path = "perun/nodes/" + h5id + "/nodes/0/nodes"
-    h5_paths = []
-    nodes = []
-    # get internal hdf5 paths to data for each node
-    for node_id, node_obj in h5val[h5_base_path].items():
-        h5_paths.append("perun/nodes/" + h5id + "/nodes/0/nodes/" + node_id + "/nodes")
-        nodes.append(node_id)
-    return h5_paths, nodes
+    region_base_path = "perun/nodes/" + h5id + "/nodes/0/regions"
+    region_paths = None
+    if region_base_path in h5val:
+        regions = [name for name, obj in h5val[region_base_path].items() if isinstance(obj, h5py.Group)]
+        if regions:
+            region_paths = []
+            for region in regions:
+                region_paths.append(region_base_path + "/" + region)
+    return region_paths
 
 
-def adjust_energy(energy: np.array = None, max_val: float = None) -> np.array:
+def get_region_data(h5val, regions_paths: list = None, nodes: dict = None):
     """
-    Manipulates energy values from perun hdf5 file to get correct values.
+    Get region data.
 
     Parameters
-    ----------
-    energy : np.array
-        Energy values to b e adjusted.
-    key : str
-        cpu or ram
-    max_val : float
-        Device overflow limit.
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    regions_paths : list
+        Paths to regions
+    Nodes : Dict
+        Dictionary with nodes and global rank values.
 
     Returns
-    -------
-    energy_adjusted : np.array
-        Adjusted energy values.
+    _______
+    region_data : Dict
+        Raw data (timestamps) for regions
     """
-    e_start = energy[0]
-    energy_adjusted = []
-    e_prev = 0
-    shift_num = 0
-    for val in energy:
-        e = val - e_start
-        if val + shift_num * max_val < e_prev:
-            shift_num = shift_num + 1
-        e = e + shift_num * max_val
-        e_prev = e
-        energy_adjusted.append(e)
-    energy_adjusted = np.array(energy_adjusted)
-    return np.array(energy_adjusted)
+
+    perun_region_data = {}
+
+    for node in nodes:
+        perun_region_data[node] = {}
+        shift = min(nodes[node])
+        for global_rank in nodes[node]:
+            local_rank = global_rank - shift
+            perun_region_data[node][local_rank] = {}
+            for region_path in regions_paths:
+                region = region_path.split("/")[-1]
+                perun_region_data[node][local_rank][region] = {}
+                timestamps = np.array(h5val[region_path + "/raw_data/" + str(global_rank)])
+                perun_region_data[node][local_rank][region]["timestamps"] = timestamps
+    return perun_region_data
+
+
+def map_regions_to_power(perun_region_data: dict = None, perun_sensor_data: dict = None, keys: list = None):
+    """
+    Map region data to power profile and calcuclate region energy.
+
+    Parameters
+    __________
+    perun_region_data : Dict
+        Raw data for regions
+    perun_sensor_data : Dict
+        Perun data
+    keys : str
+        gpu, cpu, or ram
+
+    Returns
+    _______
+    perun_region_data : Dict
+        Raw data for regions
+    """
+    for node in perun_region_data:
+        for rank in perun_region_data[node]:
+            for key in keys:
+                if key != "gpu":
+                    continue
+                power = perun_sensor_data[node][key][rank]["power"]
+                timesteps = perun_sensor_data[node][key][rank]["timesteps"]
+                for region in perun_region_data[node][rank]:
+                    timestamps = perun_region_data[node][rank][region]["timestamps"]
+                    perun_region_data[node][rank][region]["avg_power"] = []
+                    perun_region_data[node][rank][region]["duration"] = []
+                    perun_region_data[node][rank][region]["energy"] = []
+                    for i in range(timestamps.shape[0] // 2):
+                        if len(power) > 2:
+                            start = timestamps[i * 2]
+                            end = timestamps[i * 2 + 1]
+                            t_inter = np.concatenate([[start], timesteps[np.all([timesteps >= start, timesteps <= end], axis=0)], [end]])
+                            avg_p = np.mean(np.interp(t_inter, timesteps, power))
+                            duration = end - start
+                            perun_region_data[node][rank][region]["avg_power"] = avg_p
+                            perun_region_data[node][rank][region]["duration"] = duration
+                            perun_region_data[node][rank][region]["energy"] = avg_p * duration
+    return perun_region_data
 
 
 def get_utilization(
-    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+        h5val=None, h5_base_path: str = None, num: int = None, key: str = None
 ) -> [np.array, np.array]:
     """
-    Get gpu power data from corresponding hdf5 file provided by perun.
+    Get utilization data from corresponding hdf5 file provided by perun.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -122,15 +226,13 @@ def get_utilization(
         gou, cpu, or ram
 
     Returns
-    -------
+    _______
     data : dict
-        Contains the gpu power data saved as np.arrays.
+        Contains utilization data saved as np.arrays.
     """
     if key == "gpu":
-        #h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/values"
-        #h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/timesteps"
-        h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/values"
-        h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/timesteps"
+        h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_MEM/raw_data/values"
+        h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_MEM/raw_data/timesteps"
     if key == "cpu":
         h5_val_path = f"{h5_base_path}CPU_USAGE/raw_data/values"
         h5_time_path = f"{h5_base_path}CPU_USAGE/raw_data//timesteps"
@@ -139,19 +241,19 @@ def get_utilization(
         h5_time_path = f"{h5_base_path}RAM_USAGE/raw_data/timesteps"
     vals = np.array(h5val[h5_val_path])
     mag = float(h5val[h5_val_path].attrs["mag"])
-    power = vals* mag
+    util = vals * mag
     timesteps = np.array(h5val[h5_time_path])
-    return power, timesteps
+    return util, timesteps
 
 
-def get_gpu_freq(
-    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+def get_cpu_util(
+        h5val=None, h5_base_path: str = None, num: int = None, key: str = None
 ) -> [np.array, np.array]:
     """
-    Get gpu frequencies from corresponding hdf5 file provided by perun.
+    Get utilization data from corresponding hdf5 file provided by perun.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -162,11 +264,42 @@ def get_gpu_freq(
         gou, cpu, or ram
 
     Returns
-    -------
+    _______
+    data : dict
+        Contains utilization data saved as np.arrays.
+    """
+    h5_val_path = f"{h5_base_path}/CPU_UTIL"
+    vals = float(h5val[h5_val_path].attrs["value"])
+    mag = float(h5val[h5_val_path].attrs["mag"])
+    cpu_util = vals * mag
+    return cpu_util
+
+
+def get_gpu_freq(
+        h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+) -> [np.array, np.array]:
+    """
+    Get gpu frequencies from corresponding hdf5 file provided by perun.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+    h5_base_path: str
+        Internal path within hdf5 file.
+    num : int
+        Index of corresponding core
+    key : str
+        gou, cpu, or ram
+
+    Returns
+    _______
     data : dict
         Contains utilization data saved as np.arrays.
     """
     if key == "gpu":
+        # h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/values"
+        # h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_SM/raw_data/timesteps"
         h5_val_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/values"
         h5_time_path = f"{h5_base_path}CUDA:{num}_CLOCK_GRAPHICS/raw_data/timesteps"
     vals = np.array(h5val[h5_val_path])
@@ -177,13 +310,13 @@ def get_gpu_freq(
 
 
 def get_gpu_sm(
-    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+        h5val=None, h5_base_path: str = None, num: int = None, key: str = None
 ) -> [np.array, np.array]:
     """
     Get gpu sm from corresponding hdf5 file provided by perun.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -194,7 +327,7 @@ def get_gpu_sm(
         gou, cpu, or ram
 
     Returns
-    -------
+    _______
     data : dict
         Contains utilization data saved as np.arrays.
     """
@@ -209,13 +342,13 @@ def get_gpu_sm(
 
 
 def get_power(
-    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
+        h5val=None, h5_base_path: str = None, num: int = None, key: str = None
 ) -> [np.array, np.array]:
     """
     Get gpu power data from corresponding hdf5 file provided by perun.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -226,10 +359,12 @@ def get_power(
         gou, cpu, or ram
 
     Returns
-    -------
+    _______
     data : dict
         Contains the gpu power data saved as np.arrays.
     """
+    power = np.array([])
+    timesteps = np.array([])
     if key == "gpu":
         h5_power_path = f"{h5_base_path}CUDA:{num}_POWER/raw_data/values"
         h5_time_path = f"{h5_base_path}CUDA:{num}_POWER/raw_data/timesteps"
@@ -239,89 +374,22 @@ def get_power(
     if key == "cpu":
         h5_power_path = f"{h5_base_path}cpu_{num}_package-{num}/raw_data/values"
         h5_time_path = f"{h5_base_path}cpu_{num}_package-{num}/raw_data/timesteps"
-    power = np.array(h5val[h5_power_path])
-    mag = float(h5val[h5_power_path].attrs["mag"])
-    power = power*mag
-    timesteps = np.array(h5val[h5_time_path])
+    if h5_power_path in h5val:
+        power = np.array(h5val[h5_power_path])
+        mag = float(h5val[h5_power_path].attrs["mag"])
+        power = power * mag
+        timesteps = np.array(h5val[h5_time_path])
     return power, timesteps
 
 
-def get_cpu_freq(
-    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
-) -> [np.array, np.array]:
-    """
-    Get cpu frequencies from corresponding hdf5 file provided by perun.
-
-    Parameters
-    ----------
-    h5val : HDF5
-        Key value to hdf5 file.
-    h5_base_path: str
-        Internal path within hdf5 file.
-    num : int
-        Index of corresponding core
-    key : str
-        gou, cpu, or ram
-
-    Returns
-    -------
-    data : dict
-        Contains frequencies data saved as np.arrays.
-    """
-    if key == "cpu":
-        h5_path = f"{h5_base_path}"
-        cpu_freqs = {}
-        for name, _ in h5val[h5_path].items():
-            if key == "cpu" and "FREQ" in name:
-                num = int(name.split("_")[-1])
-                h5_val_path = f"{h5_base_path}/CPU_FREQ_{num}/raw_data/values"
-                h5_time_path = f"{h5_base_path}/CPU_FREQ_{num}/raw_data/timesteps"
-                vals = np.array(h5val[h5_val_path])
-                mag = float(h5val[h5_val_path].attrs["mag"])
-                freqs = vals * mag
-                timesteps = np.array(h5val[h5_time_path])
-                cpu_freq_single_device_mean = np.trapz(freqs, timesteps) / (timesteps[-1] - timesteps[0])
-                cpu_freqs[num] = cpu_freq_single_device_mean / 10**(9)  # in GHz
-    return cpu_freqs
-
-
-def get_cpu_util(
-    h5val=None, h5_base_path: str = None, num: int = None, key: str = None
-) -> [np.array, np.array]:
-    """
-    Get utilization data from corresponding hdf5 file provided by perun.
-
-    Parameters
-    ----------
-    h5val : HDF5
-        Key value to hdf5 file.
-    h5_base_path: str
-        Internal path within hdf5 file.
-    num : int
-        Index of corresponding core
-    key : str
-        gou, cpu, or ram
-
-    Returns
-    -------
-    data : dict
-        Contains utilization data saved as np.arrays.
-    """
-    h5_val_path = f"{h5_base_path}/CPU_UTIL"
-    vals = float(h5val[h5_val_path].attrs["value"])
-    mag = float(h5val[h5_val_path].attrs["mag"])
-    cpu_util = vals * mag
-    return cpu_util
-
-
 def get_gpu_mem(
-    h5val=None, h5_gpu_base_path: str = None, num: int = None
+        h5val=None, h5_gpu_base_path: str = None, num: int = None
 ) -> [np.array, np.array]:
     """
     Get gpu memory data from corresponding hdf5 file provided by perun.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -330,7 +398,7 @@ def get_gpu_mem(
         Index of corresponding core
 
     Returns
-    -------
+    _______
     mem : dict
         Contains the gpu memory data saved as np.arrays.
     timesteps : dict
@@ -339,49 +407,10 @@ def get_gpu_mem(
     h5_gpu_mem_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/values"
     mem = np.array(h5val[h5_gpu_mem_path])
     mag = h5val[h5_gpu_mem_path].attrs["mag"]
-    mem = mem*mag
+    mem = mem * mag
     h5_gpu_time_path = f"{h5_gpu_base_path}CUDA:{num}_MEM/raw_data/timesteps"
     timesteps = np.array(h5val[h5_gpu_time_path])
     return mem, timesteps
-
-
-def get_energy(
-    h5val=None, h5_path: str = None, num: int = None, key: str = None
-) -> [np.array, np.array]:
-    """
-    Get ram or cpu energy data from corresponding hdf5 file provided by perun.
-
-    Parameters
-    ----------
-    h5val : HDF5
-        Key value to hdf5 file.
-    h5_base_path: str
-        Internal path within hdf5 file.
-    num : int
-        Index of corresponding core
-    key : str
-        gpu or ram
-
-    Returns
-    -------
-    data : dict
-        Contains the cpu or ram data saved as np.arrays.
-    """
-    energy = np.array([])
-    timesteps = np.array([])
-    if key == "ram":
-        h5_energy_path = f"{h5_path}ram_{num}_dram/raw_data/alt_values"
-        h5_time_path = f"{h5_path}ram_{num}_dram/raw_data/timesteps"
-    if key == "cpu":
-        h5_energy_path = f"{h5_path}cpu_{num}_package-{num}/raw_data/alt_values"
-        h5_time_path = f"{h5_path}cpu_{num}_package-{num}/raw_data/timesteps"
-    energy = np.array(h5val[h5_energy_path])
-    mag = h5val[h5_energy_path].attrs["mag"]
-    max_val = h5val[h5_energy_path].attrs["max_val"] * mag
-    energy = energy * mag
-    energy = adjust_energy(energy, max_val)
-    timesteps = np.array(h5val[h5_time_path])
-    return energy, timesteps
 
 
 def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> dict:
@@ -389,7 +418,7 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
     Get ram, cpu, or gpu energy/power data from corresponding hdf5 file provided by perun.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
     h5_base_path: str
@@ -398,7 +427,7 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
         gpu, ram, or cpu
 
     Returns
-    -------
+    _______
     data : dict
         Contains the cpu, ram, or gpu data saved as np.arrays.
     """
@@ -411,7 +440,7 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
         power, timesteps = get_power(h5val, h5_path, num, key)
         if key == "gpu":
             mem, _ = get_gpu_mem(h5val, h5_path, num)
-            data[num]['memory'] = mem / (1024 ** 3)  # B to GB
+            data[num]['memory'] = mem / 1024 ** 3  # B to GB
             freq, _ = get_gpu_freq(h5val, h5_path, num, key)
             data[num]["freq"] = freq * 10 ** 6  # Hz to MHz
             sm, _ = get_gpu_sm(h5val, h5_path, num, key)
@@ -420,39 +449,68 @@ def get_specific_data(h5val=None, h5_base_path: str = None, key: str = None) -> 
             data[num]["cpu_util"] = get_cpu_util(h5val, h5_metric_path, num, key)
         data[num]["util"], _ = get_utilization(h5val, h5_path, num, key)
         data[num]["power"] = power
-        data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
-        data[num]["timesteps"] = timesteps
-        #if key == "cpu":
-        #    data[num]["cpu_freqs"] = get_cpu_freq(h5val, h5_path, num, key)
+        if power.shape[0] > 2:
+            data[num]["energy"] = sp.integrate.cumulative_trapezoid(power, x=timesteps)
+            data[num]["timesteps"] = timesteps
+        else:
+            data[num]["energy"] = [0]
+            data[num]["timesteps"] = [0]
     return data
 
 
-def get_perun_data(h5val: h5py = None) -> dict:
+def get_perun_data(h5val: h5py = None, name: str = None) -> dict:
     """
     Get all energy and power data from corresponding hdf5 file provided by perun.
 
     Parameters
-    ----------
+    __________
     h5val : HDF5
         Key value to hdf5 file.
 
     Returns
-    -------
+    _______
     perun_data : dict
         Contains the perun data saved as np.arrays.
     """
-    keys = ["gpu", "cpu", "ram"]
-    perun_data = {}
+
+    perun_sensor_data = {}
+    perun_region_data = {}
     h5_base_paths, nodes = get_h5_paths(h5val)
+    keys = get_keys(h5val, h5_base_paths)
+    regions_paths = check_regions(h5val)
+    perun_region_data = {}
     for i, h5_base_path in enumerate(h5_base_paths):
-        node = nodes[i]  # Collects data for each node.
-        perun_data[node] = {}
+        node = h5_base_path.split("/")[-2]
+        perun_sensor_data[node] = {}
         for key in keys:
-            perun_data[node][key] = get_specific_data(h5val, h5_base_path, key)
-    return perun_data
+            perun_sensor_data[node][key] = get_specific_data(h5val, h5_base_path, key)
+    if regions_paths is not None:
+        perun_region_data = get_region_data(h5val, regions_paths, nodes)
+        map_regions_to_power(perun_region_data, perun_sensor_data, keys)
+    return perun_sensor_data, perun_region_data
 
 
-def get_timings(h5val: h5py = None, data: dict = None, folder : str = None):
+def get_fcn_inference_data(h5val: h5py = None) -> dict:
+    """
+    Get inference data from fcn.
+
+    Parameters
+    __________
+    h5val : HDF5
+        Key value to hdf5 file.
+
+    Returns
+    _______
+    inference_data : dict
+        Contains the inference_data saved as np.arrays.
+    """
+    inference_data = {}
+    vals = np.array(h5val["rmse"])
+    inference_data["z500"] = vals[:, :, 14]
+    return inference_data
+
+
+def get_timings(h5val: h5py = None, data: dict = None, folder: str = None):
     """
     Evaluates the compute times of the training.
 
@@ -467,21 +525,16 @@ def get_timings(h5val: h5py = None, data: dict = None, folder : str = None):
     """
     gpus = data[folder]["gpus"]
 
-    batch_keys = ["batch_time_dataloading", "batch_time_data_to_device",
-                  "batch_time_forward", "batch_time_backward", "batch_time_total"]
-
-    valid_keys = ["val_time_dataloading", "val_time_data_to_device", "val_time_forward", "val_time_in-batch_eval",
-                  "val_time_out-batch_eval", "val_time_total"]
-
-    epoch_keys = ["epoch_time_init", "epoch_time_batches", "epoch_time_validate_train", "epoch_time_validate_valid",
-                  "epoch_time_allreduce", "epoch_time_evaluation", "epoch_time_prints",
-                  "epoch_time_step", "epoch_time_total"]
+    batch_keys = ["batch_time_data_to_device", "batch_time_forward", "batch_time_forward_twostep",
+                  "batch_time_loss", "batch_time_loss_twostep", "batch_time_backward",
+                  "batch_time_logging", "batch_time_dataloading", "batch_time_single_batch_total",
+                  "batch_time_allreduce", "batch_time_total", "batch_time_init", "batch_time_grad_zero"]
 
     data[folder]["timings"] = {}
     idx = 0
     for n in range(gpus):
-        idx = idx + len(np.array(h5val[f"{n}/batch_times_e{1}/batch_time_total"]))
-    data[folder]["batch_iterations"] = int(idx/gpus)
+        idx = idx + len(np.array(h5val[f"{n}/batch_times_e{1}/batch_time_single_batch_total"]))
+    data[folder]["batch_iterations"] = int(idx / gpus)
 
     for epoch in range(2):
         data[folder]["timings"][epoch] = {}
@@ -489,30 +542,6 @@ def get_timings(h5val: h5py = None, data: dict = None, folder : str = None):
         for key in batch_keys:
             timings = 0
             for n in range(gpus):
-                timings = timings + np.mean(np.array(h5val[f"{n}/batch_times_e{epoch+1}/{key}"]))
+                timings = timings + np.mean(np.array(h5val[f"{n}/batch_times_e{epoch + 1}/{key}"]))
             data[folder]["timings"][epoch]["batch"][key] = timings / gpus
-
-        # FIX BUG:
-        dataloading = data[folder]["timings"][epoch]["batch"]["batch_time_dataloading"]
-        time_data_to_device = data[folder]["timings"][epoch]["batch"]["batch_time_data_to_device"]
-        batch_time_forward = data[folder]["timings"][epoch]["batch"]["batch_time_forward"]
-        batch_time_backward = data[folder]["timings"][epoch]["batch"]["batch_time_backward"]
-        batch_time_total = data[folder]["timings"][epoch]["batch"]["batch_time_total"]
-        data[folder]["timings"][epoch]["batch"]["batch_time_step"] = batch_time_total
-        batch_time_total = batch_time_total + batch_time_backward + batch_time_forward + time_data_to_device + dataloading
-        data[folder]["timings"][epoch]["batch"]["batch_time_total"] = batch_time_total
-
-        data[folder]["timings"][epoch]["valid"] = {}
-        for key in valid_keys:
-            timings = 0
-            for n in range(gpus):
-                timings = timings + np.mean(np.array(h5val[f"{n}/val_times_valid_e{epoch+1}/{key}"]))
-            data[folder]["timings"][epoch]["valid"][key] = timings / gpus
-
-        data[folder]["timings"][epoch]["epoch"] = {}
-        for key in epoch_keys:
-            timings = 0
-            for n in range(gpus):
-                timings = timings + (np.array(h5val[f"{n}/{key}"]))[epoch]
-            data[folder]["timings"][epoch]["epoch"][key] = timings / gpus
     return data
