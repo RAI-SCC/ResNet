@@ -4,9 +4,9 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --account=hk-project-test-p0025793_2
-#SBATCH --output="/hkfs/work/workspace/scratch/xy6660-ResNet/experiments/slurm_%j"
+#SBATCH --output="/hkfs/work/workspace/scratch/xy6660-ResNet/experiments/slurm_out/slurm_%j"
 #SBATCH --exclusive
-##SBATCH --exclude  hkn[]
+#SBATCH --exclude  hkn[0402]
 
 # Create input data on TMPDIR:
 date
@@ -40,7 +40,7 @@ export LOCAL_BATCHSIZE=$LBS
 export BATCHSIZE=$(($LOCAL_BATCHSIZE * $NUM_GPUS))
 export NUM_EPOCHS=$EPOCHS
 export BACTH_ITER=$BATCH_ITER
-export NUM_WORKERS=4
+export NUM_WORKERS=0
 export RANDOM_SEED=0
 export LR_SCHEDULER="plateau"
 
@@ -62,10 +62,11 @@ PERUN_OUT="$RESDIR/perun"
 PERUN_APP_NAME="perun"
 
 cd ${RESDIR}
+cp ${PYDIR}/.perun.ini .
 
 srun -u --mpi=pmi2 bash -c "
         PERUN_DATA_OUT=$PERUN_OUT \
         PERUN_APP_NAME=$PERUN_APP_NAME \
-        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main_timings.py \
+        perun monitor --data_out=$PERUN_OUT --app_name=$PERUN_APP_NAME ${PYDIR}/scripts/main.py \
         --data_path ${DATA_PATH} --batchsize ${BATCHSIZE} --num_epochs ${NUM_EPOCHS} --num_workers ${NUM_WORKERS}  \
         --lr_scheduler ${LR_SCHEDULER} --seed ${RANDOM_SEED} --subset_factor ${SUBSET_FACTOR} --batch_iter ${BATCH_ITER}"
