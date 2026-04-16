@@ -157,29 +157,24 @@ def train_model(
         else:
             n_train_batches = batch_iter
 
+        torch.cuda.synchronize()
+        dist.barrier()
         for batch_idx, (features, targets) in enumerate(itertools.islice(train_loader, n_train_batches)):  # Loop over mini batches.
 
             # Data to GPUs
-            torch.cuda.synchronize()
-            dist.barrier()
             features, targets = data_to_device(features, targets)
             # Forward
-            torch.cuda.synchronize()
-            dist.barrier()
             output = single_forward_step(features, model)
             # Loss
-            torch.cuda.synchronize()
-            dist.barrier()
             loss = single_loss_step(output, targets)
             optimizer.zero_grad()
             # Backward
-            torch.cuda.synchronize()
-            dist.barrier()
             single_backward_step(loss)
             # Weight step
+            single_update_step(optimizer)
+
             torch.cuda.synchronize()
             dist.barrier()
-            single_update_step(optimizer)
 
         # Evaluation
         if batch_iter == 0:
@@ -254,27 +249,37 @@ def train_model(
 @monitor()
 def single_forward_step(inp, model):
     output = model(inp)
+    torch.cuda.synchronize()
+    dist.barrier()
     return output
 
 
 @monitor()
 def single_loss_step(output, targets):
     loss = torch.nn.functional.cross_entropy(output, targets)
+    torch.cuda.synchronize()
+    dist.barrier()
     return loss
 
 
 @monitor()
 def single_backward_step(loss):
     loss.backward()
+    torch.cuda.synchronize()
+    dist.barrier()
 
 
 @monitor()
 def data_to_device(features, targets):
     features = features.cuda()
     targets = targets.cuda()
+    torch.cuda.synchronize()
+    dist.barrier()
     return features, targets
 
 
 @monitor()
 def single_update_step(optimizer):
     optimizer.step()
+    torch.cuda.synchronize()
+    dist.barrier()

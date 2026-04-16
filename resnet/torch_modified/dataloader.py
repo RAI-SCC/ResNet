@@ -791,6 +791,8 @@ class _SingleProcessDataLoaderIter(_BaseDataLoaderIter):
         data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
         if self._pin_memory:
             data = _utils.pin_memory.pin_memory(data, self._pin_memory_device)
+        torch.cuda.synchronize()
+        dist.barrier()
         return data
 
 
@@ -1487,6 +1489,8 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
             if len(self._task_info[self._rcvd_idx]) == 2:
                 worker_id, data = self._task_info.pop(self._rcvd_idx)
                 self._rcvd_idx += 1
+                torch.cuda.synchronize()
+                dist.barrier()
                 return self._process_data(data, worker_id)
 
             assert not self._shutdown and self._tasks_outstanding > 0
@@ -1508,12 +1512,16 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
                     # delete from self._task_info immediately
                     # this keeps the object size manageable
                     worker_id = self._task_info.pop(idx)[0]
+                    torch.cuda.synchronize()
+                    dist.barrier()
                     return self._process_data(data, worker_id)
                 # store out-of-order samples
                 self._task_info[idx] += (data,)
             else:
                 worker_id = self._task_info.pop(idx)[0]
                 self._rcvd_idx += 1
+                torch.cuda.synchronize()
+                dist.barrier()
                 return self._process_data(data, worker_id)
 
     def _try_put_index(self):
